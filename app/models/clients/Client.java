@@ -323,6 +323,10 @@ public class Client extends HecticusModel {
         return Client.finder.where().setFirstRow(page).setMaxRows(pageSize).findList();
     }
 
+    public static List<Client> getFriends(String[] friendsArray){
+        return finder.where().in("facebookId", friendsArray).findList();
+    }
+
     //Basic Operations
 
     public void checkStatus(String upstreamChannel) throws ParseException, UpstreamException {
