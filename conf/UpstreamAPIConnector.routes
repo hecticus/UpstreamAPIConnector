@@ -1,0 +1,39 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Map static resources from the /public folder to the /assets URL path
+GET           /assets/*file                                       controllers.Assets.versioned(path="/public", file: Asset)
+
+#Upstream
+
+POST            /api/v1/client/:id/upstream                         controllers.Upstream.sendClientEvent(id : Integer)
+POST            /api/v1/clients/upstream/resetpass                  controllers.Upstream.resetUpstreamPass()
+
+##FAKE UPSTREAM URL
+POST            /api/v1/clients/upstream/game/user/subscribe        controllers.Upstream.upstreamFakeCreate()
+POST            /api/v1/clients/upstream/game/user/login            controllers.Upstream.upstreamFakeLogin()
+POST            /api/v1/clients/upstream/game/user/status           controllers.Upstream.upstreamFakeStatus()
+POST            /api/v1/clients/upstream/game/user/password         controllers.Upstream.upstreamFakeResetPass()
+POST            /api/v1/clients/upstream/game/user/event            controllers.Upstream.upstreamFakeEventSend()
+
+#Clients
+
+##V1
+POST            /api/v1/clients/create                              controllers.client.Clients.create()
+POST            /api/v1/clients/update/:id                          controllers.client.Clients.update(id : Integer)
+POST            /api/v1/clients/delete/:id                          controllers.client.Clients.delete(id : Integer)
+GET             /api/v1/clients/get/:id/:upstreamChannel            controllers.client.Clients.get(id : Integer, upstreamChannel : String, pmc : Boolean?=false)
+GET             /api/v1/clients/list                                controllers.client.Clients.list(pageSize: Integer?=0, page: Integer?=0, pmc : Boolean?=false)
+
+###Clients PMC
+GET             /api/v1/clients/pmc/get/:id                        controllers.client.Clients.get(id : Integer, upstreamChannel : String?="Android", pmc : Boolean?=true)
+GET             /api/v1/clients/pmc/list/:page/:pageSize           controllers.client.Clients.list(pageSize: Integer, page: Integer, pmc : Boolean?=true)
+POST            /api/v1/clients/pmc/clean                          controllers.client.Clients.cleanDevices()
+
+##V2
+POST            /api/v2/client                                      controllers.client.Clients.create()
+GET             /api/v2/client/:id                                  controllers.client.Clients.get(id : Integer, upstreamChannel : String ?= "Android", pmc : Boolean ?= false)
+PUT             /api/v2/client/:id                                  controllers.client.Clients.update(id : Integer)
+DELETE          /api/v2/client/:id                                  controllers.client.Clients.delete(id : Integer)
+
