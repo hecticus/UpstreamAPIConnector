@@ -2,7 +2,10 @@ package models.basic;
 
 import com.avaje.ebean.Page;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import models.HecticusModel;
+import models.clients.ClientHasDevices;
 import play.data.validation.Constraints;
 import play.db.ebean.Model;
 import play.libs.Json;
@@ -11,10 +14,7 @@ import scala.collection.JavaConversions;
 import scala.collection.mutable.Buffer;
 
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by plesse on 9/30/14.
@@ -36,7 +36,10 @@ public class Country extends HecticusModel {
     @JoinColumn(name = "id_language")
     private Language language;
 
-    public static Model.Finder<Integer, Country> finder = new Model.Finder<Integer, Country>(Integer.class, Country.class);
+    @OneToMany(mappedBy="country", cascade = CascadeType.ALL)
+    private List<CountryHasTimezone> timezones;
+
+    public static Model.Finder<Integer, Country> finder = new Model.Finder<>(Integer.class, Country.class);
 
     public Integer getIdCountry() {
         return idCountry;
@@ -78,8 +81,33 @@ public class Country extends HecticusModel {
         this.active = active;
     }
 
+    public List<CountryHasTimezone> getTimezones() {
+        return timezones;
+    }
+
+    public void setTimezones(List<CountryHasTimezone> timezones) {
+        this.timezones = timezones;
+    }
+
     @Override
     public ObjectNode toJson() {
+        ObjectNode response = Json.newObject();
+        response.put("id_country", idCountry);
+        response.put("name", name);
+        response.put("short_name", shortName);
+        response.put("active", active);
+        response.put("language", language.toJson());
+        if(timezones != null && !timezones.isEmpty()){
+            ArrayList<ObjectNode> timezonesNodes = new ArrayList<>();
+            for(CountryHasTimezone countryHasTimezone : timezones){
+                timezonesNodes.add(countryHasTimezone.getTimezone().toJson());
+            }
+            response.put("timezones", Json.toJson(timezonesNodes));
+        }
+        return response;
+    }
+
+    public ObjectNode toJsonWithNoTimezones() {
         ObjectNode response = Json.newObject();
         response.put("id_country", idCountry);
         response.put("name", name);
@@ -96,8 +124,23 @@ public class Country extends HecticusModel {
         return response;
     }
 
+    public Timezone getActiveTimezone(){
+        Timezone timezone = null;
+        try {
+            CountryHasTimezone relation = Iterables.find(timezones, new Predicate<CountryHasTimezone>() {
+                public boolean apply(CountryHasTimezone obj) {
+                    return obj.getActive();
+                }
+            });
+            timezone = relation.getTimezone();
+        } catch (NoSuchElementException ex){
+            timezone = null;
+        }
+        return timezone;
+    }
+
     public static Map<String,String> options() {
-        LinkedHashMap<String,String> options = new LinkedHashMap<String,String>();
+        LinkedHashMap<String,String> options = new LinkedHashMap<>();
         List<Country> countries = Country.finder.all();
         for(Country c: countries) {
             options.put(c.getIdCountry().toString(), c.getName());
