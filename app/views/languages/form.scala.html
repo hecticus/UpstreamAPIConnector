@@ -1,0 +1,77 @@
+@(languageViewForm: Form[models.basic.Language])
+
+@import helper._
+@import helper.twitterBootstrap._
+@import helpers._
+
+@title = {}
+
+@main(title = "Crear Language", nav = "create") {
+
+    @if(flash.containsKey("success")) {
+        <div class="alert-message warning">
+            <strong>@Messages("generic.error.title")</strong> @flash.get("success")
+        </div>
+    }
+
+    @if(languageViewForm.hasErrors) {
+        <div class="alert alert-dismissable alert-danger">
+            <button type="button" class="close" data-dismiss="alert">×</button>
+            <strong>@Messages("generic.error.title")</strong> @Messages("generic.error.content")
+            <p>@languageViewForm.errorsAsJson</p>
+        </div>
+    }
+
+
+    @helper.form(action = controllers.routes.LanguagesView.submit, 'enctype -> "multipart/form-data") {
+
+        <fieldset>
+            <legend>@Messages("languages.info")</legend>
+
+            <div class="row">
+                <div class="col-lg-5">
+                @inputText(
+                    languageViewForm("name"),
+                    '_label -> Messages("languages.name"),
+                    '_help -> Messages("languages.name.help"),
+                    'class -> "form-control",
+                    '_error -> languageViewForm.globalError
+                )
+                </div>
+                <div class="col-lg-5">
+                @inputText(
+                    languageViewForm("shortName"),
+                    '_label -> Messages("languages.shortname"),
+                    '_help -> Messages("languages.shortname.help"),
+                    'class -> "form-control",
+                    '_error -> languageViewForm.globalError
+                )
+                </div>
+                <div class="col-lg-2">
+                @materialCheckbox(
+                    languageViewForm("active"),
+                    '_label -> Messages("languages.active"),
+                    'class -> "multiInstanceCheckbox"
+                )
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12">
+                @input(languageViewForm("appLocalizationFile"), '_label -> Messages("athletes.image.file")) { (id, name, value, _) =>
+                    <input type="text" name="@name" value="@value" readonly="" class="form-control floating-label" placeholder="">
+                    <input type="file" name="@name" value="@value" id="inputFile" multiple="">
+                }
+                </div>
+            </div>
+
+        </fieldset>
+
+        <div class="actions">
+            <input type="submit" class="btn btn-success" value=@Messages("languages.submit.create")>
+            <a href="@controllers.routes.LanguagesView.list()" class="btn btn-primary">@Messages("generic.cancel")</a>
+        </div>
+
+    }
+
+}
