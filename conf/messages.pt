@@ -199,8 +199,6 @@ languages.shortname.help=Insert a valid name
 languages.active=Active
 languages.active.help=insert 0 or 1
 
-languages.localization.file=Localization File
-
 languages.submit.create=Create this language
 languages.submit.update=Update this language
 languages.submit.delete=Delete this language
@@ -282,4 +280,5 @@ devices.submit.delete=Delete this device
 devices.java.created= The device {0} has been created!
 devices.java.updated= The device {0} has been updated!
 devices.java.deleted= The device {0} has been deleted!
+languages.localization.file=Localization File
 

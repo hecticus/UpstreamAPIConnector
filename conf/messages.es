@@ -278,4 +278,5 @@ devices.java.created= El Dispositivo {0} ha sido creado!
 devices.java.updated= El Dispositivo {0} ha sido actualizado!
 devices.java.deleted= El Dispositivo {0} ha sido eliminado!
 main.devices=Dispositivos
+languages.localization.file=Archivo de Localizacion
 

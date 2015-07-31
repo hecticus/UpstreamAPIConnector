@@ -52,7 +52,7 @@
 
         <div class="row">
             <div class="col-lg-12">
-            @input(languageViewForm("appLocalizationFile"), '_label -> Messages("athletes.image.file")) { (id, name, value, _) =>
+            @input(languageViewForm("appLocalizationFile"), '_label -> Messages("languages.localization.file")) { (id, name, value, _) =>
                 <input type="text" name="@name" value="@value" readonly="" class="form-control floating-label" placeholder="">
                 <input type="file" name="@name" value="@value" id="inputFile" multiple="">
             }
