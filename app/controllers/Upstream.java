@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by plessmann on 05/06/15.
  */
-public class Upstream extends HecticusController {
+public class Upstream extends UpstreamController {
 
     private static final String UPSTREAM_STATUS_URL = "/game/user/status";
     private static final String UPSTREAM_PASSWORD_URL = "/game/user/password";

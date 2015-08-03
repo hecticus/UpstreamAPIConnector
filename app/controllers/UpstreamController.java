@@ -18,7 +18,7 @@ import static play.libs.Jsonp.jsonp;
 
 
 @MappedSuperclass
-public class HecticusController extends Controller {
+public class UpstreamController extends Controller {
 	/**
 	 * Metodo para minar la data que se recibe por post, el daemon manda la data en el body como un json y los admins la mandan como un
 	 * Form.
