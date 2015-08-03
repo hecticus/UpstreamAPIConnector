@@ -2,7 +2,7 @@ package controllers.client;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import controllers.HecticusController;
+import controllers.UpstreamController;
 import exceptions.UpstreamException;
 import models.Config;
 import models.basic.Language;
@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Created by plessmann on 05/06/15.
  */
-public class Clients extends HecticusController {
+public class Clients extends UpstreamController {
 
     public static Result create() {
         ObjectNode clientData = getJson();
