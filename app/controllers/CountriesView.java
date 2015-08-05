@@ -19,7 +19,7 @@ import static play.data.Form.form;
 /**
  * Created by plesse on 10/24/14.
  */
-public class CountriesView extends HecticusController {
+public class CountriesView extends UpstreamController {
     private static final int TTL = 900;
 
     final static Form<Country> CountryViewForm = form(Country.class);

@@ -13,7 +13,7 @@ import static play.data.Form.form;
 /**
  * Created by plessmann on 30/07/15.
  */
-public class DevicesView extends HecticusController {
+public class DevicesView extends UpstreamController {
 
     final static Form<Device> DeviceViewForm = form(Device.class);
     public static Result GO_HOME = redirect(routes.DevicesView.list(0, "name", "asc", ""));

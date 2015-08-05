@@ -16,7 +16,7 @@ import static play.data.Form.form;
 /**
  * Created by plessmann on 30/07/15.
  */
-public class TimezonesView extends HecticusController {
+public class TimezonesView extends UpstreamController {
 
     final static Form<Timezone> TimezoneViewForm = form(Timezone.class);
     public static Result GO_HOME = redirect(routes.TimezonesView.list(0, "name", "asc", ""));

@@ -18,7 +18,7 @@ import static play.data.Form.form;
 /**
  * Created by plesse on 10/24/14.
  */
-public class LanguagesView extends HecticusController {
+public class LanguagesView extends UpstreamController {
 
     final static Form<Language> LanguageViewForm = form(Language.class);
     public static Result GO_HOME = redirect(routes.LanguagesView.list(0, "name", "asc", ""));
