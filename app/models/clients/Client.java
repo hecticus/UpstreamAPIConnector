@@ -345,7 +345,11 @@ public class Client extends HecticusModel {
                 if (this.login != null) {
                     Upstream.getStatusFromUpstream(this, upstreamChannel);
                     this.setLastCheckDate(sf.format(actualDate.getTime()));
-                    this.update();
+                    try{
+                        this.update();
+                    } catch (OptimisticLockException ex){
+                        //i dont care fo OptimisticLockException
+                    }
                 } else {
                     long daysBetween = DateAndTime.daysBetween(lastCheckDate, actualDate);
                     if (daysBetween >= Config.getInt("free-days")) {

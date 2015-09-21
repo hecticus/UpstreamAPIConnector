@@ -1,0 +1,48 @@
+@(timezoneViewForm: Form[models.basic.Timezone])
+
+@import helper._
+@import helper.twitterBootstrap._
+@import helpers._
+
+@title = {}
+
+@main(title = "Crear Timezone", nav = "create") {
+
+    @if(flash.containsKey("success")) {
+        <div class="alert-message warning">
+            <strong>@Messages("generic.error.title")</strong> @flash.get("success")
+        </div>
+    }
+
+    @if(timezoneViewForm.hasErrors) {
+        <div class="alert alert-dismissable alert-danger">
+            <button type="button" class="close" data-dismiss="alert">×</button>
+            <strong>@Messages("generic.error.title")</strong> @Messages("generic.error.content")
+            <p>@timezoneViewForm.errorsAsJson</p>
+        </div>
+    }
+
+
+    @helper.form(action = controllers.routes.TimezonesView.submit, 'enctype -> "multipart/form-data") {
+
+        <fieldset>
+            <legend>@Messages("timezones.info")</legend>
+
+            @inputText(
+                timezoneViewForm("name"),
+                '_label -> Messages("timezones.name"),
+                '_help -> Messages("timezones.name.help"),
+                'class -> "form-control",
+                '_error -> timezoneViewForm.globalError
+            )
+
+        </fieldset>
+
+        <div class="actions">
+            <input type="submit" class="btn btn-success" value=@Messages("timezones.submit.create")>
+            <a href="@controllers.routes.TimezonesView.list()" class="btn btn-primary">@Messages("generic.cancel")</a>
+        </div>
+
+    }
+
+}
