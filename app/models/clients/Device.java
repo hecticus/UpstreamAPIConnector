@@ -1,18 +1,20 @@
 package models.clients;
 
+import com.avaje.ebean.Page;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import models.HecticusModel;
 import play.data.validation.Constraints;
 import play.db.ebean.Model;
 import play.libs.Json;
+import scala.Tuple2;
+import scala.collection.JavaConversions;
+import scala.collection.mutable.Buffer;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by plesse on 9/30/14.
@@ -96,5 +98,34 @@ public class Device extends HecticusModel {
         }
         return  iterator;
     }
+
+    public static scala.collection.immutable.List<Tuple2<String, String>> toSeq() {
+        List<Device> devices = Device.finder.all();
+        ArrayList<Tuple2<String, String>> proxy = new ArrayList<>();
+        for(Device device : devices) {
+            Tuple2<String, String> t = new Tuple2<>(device.getIdDevice().toString(), device.getName());
+            proxy.add(t);
+        }
+        Buffer<Tuple2<String, String>> timezonesBuffer = JavaConversions.asScalaBuffer(proxy);
+        scala.collection.immutable.List<Tuple2<String, String>> timezonesList = timezonesBuffer.toList();
+        return timezonesList;
+    }
+
+    public static Map<String,String> options() {
+        LinkedHashMap<String,String> options = new LinkedHashMap<String,String>();
+        List<Device> devices = finder.all();
+        for(Device l: devices) {
+            options.put(l.getIdDevice().toString(), l.getName());
+        }
+        return options;
+    }
+
+    public static Page<Device> page(int page, int pageSize, String sortBy, String order, String filter) {
+        return finder.where().orderBy(sortBy + " " + order).findPagingList(pageSize).getPage(page);
+    }
+
+
+
+
 
 }

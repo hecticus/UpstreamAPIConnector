@@ -33,10 +33,10 @@ public class Language extends HecticusModel {
     private String name;
     @Constraints.Required
     private String shortName;
-    @Constraints.Required
-    private Integer active;
 
-    @Constraints.Required
+    private Boolean active;
+
+
     private String appLocalizationFile;
 
     public static Model.Finder<Integer, Language> finder = new Model.Finder<Integer, Language>(Integer.class, Language.class);
@@ -65,11 +65,11 @@ public class Language extends HecticusModel {
         this.shortName = shortName;
     }
 
-    public Integer getActive() {
+    public Boolean getActive() {
         return active;
     }
 
-    public void setActive(Integer active) {
+    public void setActive(Boolean active) {
         this.active = active;
     }
 
@@ -97,7 +97,7 @@ public class Language extends HecticusModel {
 
     public static Map<String,String> options() {
         LinkedHashMap<String,String> options = new LinkedHashMap<String,String>();
-        List<Language> languages = finder.where().eq("active", 1).findList();
+        List<Language> languages = finder.where().eq("active", true).findList();
         for(Language l: languages) {
             options.put(l.getIdLanguage().toString(), l.getName());
         }
@@ -105,7 +105,7 @@ public class Language extends HecticusModel {
     }
 
     public static scala.collection.immutable.List<Tuple2<String, String>> toSeq() {
-        List<Language> languages = finder.where().eq("active", 1).findList();
+        List<Language> languages = finder.where().eq("active", true).findList();
         ArrayList<Tuple2<String, String>> proxy = new ArrayList<>();
         for(Language l : languages) {
             Tuple2<String, String> t = new Tuple2<>(l.getIdLanguage().toString(), l.getName());
@@ -121,11 +121,11 @@ public class Language extends HecticusModel {
     }
 
     public static List<Language> getActiveLanguages(){
-        return finder.where().eq("active", 1).findList();
+        return finder.where().eq("active", true).findList();
     }
 
     public static Language getLanguageByShortName(String lang){
-        return finder.where().eq("active", 1).eq("shortName", lang).findUnique();
+        return finder.where().eq("active", true).eq("shortName", lang).findUnique();
     }
 
     public static Language getByID(int id){

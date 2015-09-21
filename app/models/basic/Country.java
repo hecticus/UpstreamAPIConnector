@@ -29,8 +29,7 @@ public class Country extends HecticusModel {
     private String name;
     @Constraints.Required
     private String shortName;
-    @Constraints.Required
-    private Integer active;
+    private Boolean active;
 
     @OneToOne
     @JoinColumn(name = "id_language")
@@ -73,11 +72,11 @@ public class Country extends HecticusModel {
         this.shortName = shortName;
     }
 
-    public Integer getActive() {
+    public Boolean getActive() {
         return active;
     }
 
-    public void setActive(Integer active) {
+    public void setActive(Boolean active) {
         this.active = active;
     }
 

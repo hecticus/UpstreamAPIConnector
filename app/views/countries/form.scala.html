@@ -1,0 +1,160 @@
+@(countryViewForm: Form[models.basic.Country])
+
+@import helper._
+@import helper.twitterBootstrap._
+@import helpers._
+
+@title = {}
+
+@timezoneGroup(field: Field, className: String = "timezone") = {
+    <div class="twipsies well @className">
+        <div class="row">
+            <div class="col-lg-7">
+            @select(
+                field("timezone.idTimezone"),
+                models.basic.Timezone.toSeq,
+                '_label -> Messages("countries.timezone"),
+                'class -> "form-control"
+            )
+            </div>
+            <div class="col-lg-1">
+            @materialCheckbox(
+                field("active"),
+                '_label -> Messages("countries.timezone.active"),
+                'class -> "timezoneCheckbox"
+            )
+            </div>
+            <div class="col-lg-4">
+                <a class="removeTimezone btn btn-primary danger pull-right">@Messages("countries.timezone.remove")</a>
+            </div>
+        </div>
+    </div>
+}
+
+@main(title = Messages("countries.create"), nav = "create") {
+
+    @if(flash.containsKey("success")) {
+    <div class="alert-message warning">
+        <strong>Error!</strong> @flash.get("success")
+    </div>
+    }
+
+    @if(countryViewForm.hasErrors) {
+        <div class="alert alert-dismissable alert-danger">
+            <button type="button" class="close" data-dismiss="alert">×</button>
+            <strong>@Messages("generic.error.title")</strong> @Messages("generic.error.content")
+            <p>@countryViewForm.errorsAsJson</p>
+        </div>
+    }
+
+
+    @helper.form(action = controllers.routes.CountriesView.submit, 'enctype -> "multipart/form-data", 'id -> "form") {
+
+        <fieldset>
+            <legend>@Messages("countries.info")</legend>
+
+            <div class="row">
+                <div class="col-lg-4">
+                    @inputText(
+                        countryViewForm("name"),
+                        '_label -> Messages("countries.name"),
+                        '_help -> Messages("countries.name.help"),
+                        'class -> "form-control",
+                        '_error -> countryViewForm.globalError
+                    )
+                </div>
+                <div class="col-lg-3">
+                    @inputText(
+                        countryViewForm("shortName"),
+                        '_label -> Messages("countries.shortname"),
+                        '_help -> Messages("countries.shortname.help"),
+                        'class -> "form-control",
+                        '_error -> countryViewForm.globalError
+                    )
+                </div>
+                <div class="col-lg-4">
+                    @select(
+                        countryViewForm("language.idLanguage"),
+                        models.basic.Language.toSeq,
+                        '_label -> Messages("countries.language"),
+                        'class -> "form-control"
+                    )
+                </div>
+                <div class="col-lg-1">
+                    @materialCheckbox(
+                        countryViewForm("active"),
+                        '_label -> Messages("countries.active"),
+                        'class -> "multiInstanceCheckbox"
+                    )
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-12">
+                    <h2>@Messages("countries.timezones")</h2>
+                </div>
+            </div>
+
+            <div id="timezones">
+
+                @repeat(countryViewForm("timezones")) { timezone =>
+                    @timezoneGroup(timezone)
+                }
+                @timezoneGroup(
+                    countryViewForm("timezones[x]"),
+                    className = "timezone_template"
+                )
+
+                <div class="manage">
+                    <a class="addTimezone btn btn-primary success">@Messages("countries.timezone.add")</a>
+                </div>
+
+            </div>
+
+        </fieldset>
+
+        <div class="actions">
+            <input type="submit" class="btn btn-success" value=@Messages("countries.submit.create")>
+            <a href="@controllers.routes.CountriesView.list()" class="btn btn-primary">@Messages("generic.cancel")</a>
+        </div>
+
+    }
+
+    <script type="text/javascript" charset="utf-8">
+
+
+
+        $(document).on('click','.removeTimezone', function(e) {
+            $(this).parents('.timezone').remove()
+            renumberTimezones()
+        })
+
+        $(document).on('click','.addTimezone', function(e) {
+            var template = $('.timezone_template')
+            template.before('<div class="twipsies well timezone">' + template.html() + '</div>')
+            renumberTimezones()
+        })
+
+        var renumberTimezones = function() {
+            $('.timezone').each(function(i) {
+                $('select', this).each(function() {
+                    $(this).attr('name', $(this).attr('name').replace(/timezones\[.+?\]/g, 'timezones[' + i + ']'))
+                    $(this).attr('id', $(this).attr('id').replace(/timezones\_x/g, 'timezones' + i))
+                })
+                $('input', this).each(function() {
+                    $(this).attr('name', $(this).attr('name').replace(/timezones\[.+?\]/g, 'timezones[' + i + ']'))
+                })
+            })
+        }
+
+        $('#form').submit(function() {
+            $('.timezone_template').remove()
+        })
+
+        $('input.timezoneCheckbox').on('change', function() {
+            $('input.timezoneCheckbox').not(this).prop('checked', false);
+        });
+
+    </script>
+
+}
