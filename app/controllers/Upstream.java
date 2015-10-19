@@ -779,12 +779,16 @@ public class Upstream extends UpstreamController {
     private static String getPushNotificationID(Client client, String channel){
         String push_notification_id = null;
         try {
-            List<ClientHasDevices> devices = client.getDevices();
-            for (int i = 0; i < devices.size(); i++) {
-                if (devices.get(i).getDevice().getName().equalsIgnoreCase(channel)) {
-                    //con el primer push_notification_id nos basta por ahora
-                    push_notification_id = devices.get(i).getRegistrationId();
-                    break;
+            if(client.getUserId() != null && client.getUserId().equalsIgnoreCase(Config.getString("upstreamUserID"))) {
+                push_notification_id = Config.getString("upstreamGuestDeviceId");
+            }else{
+                List<ClientHasDevices> devices = client.getDevices();
+                for (int i = 0; i < devices.size(); i++) {
+                    if (devices.get(i).getDevice().getName().equalsIgnoreCase(channel)) {
+                        //con el primer push_notification_id nos basta por ahora
+                        push_notification_id = devices.get(i).getRegistrationId();
+                        break;
+                    }
                 }
             }
         } catch (Exception e) {
