@@ -18,9 +18,7 @@ import play.mvc.Results;
 import utils.UpstreamCoreUtils;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -228,7 +226,7 @@ public class Upstream extends UpstreamController {
 
             //Data from configs
             String upstreamURL = Config.getString("upstreamURL");
-            String url = upstreamURL+"/game/user/subscribe";
+            String url = upstreamURL+UPSTREAM_SUBSCRIBE_URL;
 
             WSRequestHolder urlCall = setUpstreamRequest(url, msisdn, password);
 
@@ -237,6 +235,7 @@ public class Upstream extends UpstreamController {
             //agregamos el msisdn(username) y el password
             fields.put("password", password);
             fields.put("msisdn", msisdn);
+            fields.put("username", msisdn);
 
             //realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
@@ -418,6 +417,7 @@ public class Upstream extends UpstreamController {
             //agregamos el username y el password
             fields.put("password", password);
             fields.put("username", username);
+            fields.put("msisdn", username);
 
             //realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
@@ -927,5 +927,13 @@ public class Upstream extends UpstreamController {
         }catch (Exception ex){
             //do nothing catch to avoid interruptions
         }
+    }
+
+    private static void printRequest(WSRequestHolder urlCall, ObjectNode fields){
+        System.out.println("-----------------------\nheaders: ");
+        for (Map.Entry<String, Collection<String>> entry : urlCall.getHeaders().entrySet()) {
+            System.out.println("\t" + entry.getKey() + " " + entry.getValue());
+        }
+        System.out.println("fields: " + fields + "\n-----------------------");
     }
 }
