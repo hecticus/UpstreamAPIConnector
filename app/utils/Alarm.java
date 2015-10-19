@@ -47,7 +47,8 @@ public class Alarm {
      */
     public static void sendMail(String recipients[], String subject, String message) {
         try {
-            subject = "UpstreamAPIConnector - " + subject;
+            String appName = Config.getAppName();
+            subject = (appName != null ? appName : "UpstreamAPIConnector") + " - " + subject;
             Long o = tabla.get(subject);
             if (o != null) {
                 if ((System.currentTimeMillis() - o) < Config.getLong("alarm-send-millis")) {
