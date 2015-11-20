@@ -418,10 +418,16 @@ public class Upstream extends UpstreamController {
             fields.put("password", password);
             fields.put("username", username);
             fields.put("msisdn", username);
-
+            printRequest(urlCall, fields);
             //realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
             WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
+
+            String upstreamGuestUserId = Config.getString("upstreamUserID");
+            if(client.getUserId() != null && client.getUserId().equalsIgnoreCase(upstreamGuestUserId)){
+                return;
+            }
+
             checkUpstreamResponseStatus(wsResponse,client, fields.toString());
             ObjectNode fResponse = Json.newObject();
             fResponse = (ObjectNode)wsResponse.asJson();
@@ -507,6 +513,12 @@ public class Upstream extends UpstreamController {
             //realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
             WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
+
+            String upstreamGuestUserId = Config.getString("upstreamUserID");
+            if(client.getUserId() != null && client.getUserId().equalsIgnoreCase(upstreamGuestUserId)){
+                return;
+            }
+
             checkUpstreamResponseStatus(wsResponse,client, fields.toString());
             ObjectNode fResponse = Json.newObject();
             fResponse = (ObjectNode)wsResponse.asJson();
@@ -688,7 +700,7 @@ public class Upstream extends UpstreamController {
             fields.put("timestamp", formatDateUpstream()); //agregamos el time
 
             //audit log for points
-            upstreamRequestLogger(client, metadata, event_type);
+            upstreamRequestLogger(client, fields, event_type);
 
             //realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
@@ -696,6 +708,10 @@ public class Upstream extends UpstreamController {
 
             //audit log for responses
             upstreamResponseLogger(client, wsResponse, event_type);
+            String upstreamGuestUserId = Config.getString("upstreamUserID");
+            if(client.getUserId() != null && client.getUserId().equalsIgnoreCase(upstreamGuestUserId)){
+                return;
+            }
 
             checkUpstreamResponseStatus(wsResponse, client, fields.toString());
             ObjectNode fResponse = Json.newObject();
@@ -914,7 +930,7 @@ public class Upstream extends UpstreamController {
         try {
             if (eventType.equalsIgnoreCase("UPD_POINTS")){
                 //log event
-                Logger.of("upstream").trace("id_client:" + client.getIdClient() + " metadata: "+metadata.toString());
+                Logger.of("upstream").trace("id_client:" + client.getIdClient() + " user_id:" + client.getUserId() + " metadata: "+metadata.toString());
             }//else skip
         }catch (Exception ex){
             //do nothing catch to avoid interruptions
@@ -926,7 +942,7 @@ public class Upstream extends UpstreamController {
             if (eventType.equalsIgnoreCase("UPD_POINTS")){
                 int httpResponse = wsResponse.getStatus();
                 //log event
-                Logger.of("upstream").trace("id_client:" + client.getIdClient() + " status:"+httpResponse);
+                Logger.of("upstream").trace("id_client:" + client.getIdClient() + " user_id:" + client.getUserId() + " status:"+httpResponse);
             }//else skip
         }catch (Exception ex){
             //do nothing catch to avoid interruptions
