@@ -18,9 +18,7 @@ import play.mvc.Results;
 import utils.UpstreamCoreUtils;
 
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -228,7 +226,7 @@ public class Upstream extends UpstreamController {
 
             //Data from configs
             String upstreamURL = Config.getString("upstreamURL");
-            String url = upstreamURL+"/game/user/subscribe";
+            String url = upstreamURL+UPSTREAM_SUBSCRIBE_URL;
 
             WSRequestHolder urlCall = setUpstreamRequest(url, msisdn, password);
 
@@ -237,6 +235,7 @@ public class Upstream extends UpstreamController {
             //agregamos el msisdn(username) y el password
             fields.put("password", password);
             fields.put("msisdn", msisdn);
+            fields.put("username", msisdn);
 
             //audit log for points
             upstreamRequestLoggersubscribe(client, fields, null);
@@ -426,10 +425,17 @@ public class Upstream extends UpstreamController {
             //agregamos el username y el password
             fields.put("password", password);
             fields.put("username", username);
-
+            fields.put("msisdn", username);
+            printRequest(urlCall, fields);
             //realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
             WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
+
+            String upstreamGuestUserId = Config.getString("upstreamUserID");
+            if(client.getUserId() != null && client.getUserId().equalsIgnoreCase(upstreamGuestUserId)){
+                return;
+            }
+
             checkUpstreamResponseStatus(wsResponse,client, fields.toString());
             ObjectNode fResponse = Json.newObject();
             fResponse = (ObjectNode)wsResponse.asJson();
@@ -515,6 +521,12 @@ public class Upstream extends UpstreamController {
             //realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
             WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
+
+            String upstreamGuestUserId = Config.getString("upstreamUserID");
+            if(client.getUserId() != null && client.getUserId().equalsIgnoreCase(upstreamGuestUserId)){
+                return;
+            }
+
             checkUpstreamResponseStatus(wsResponse,client, fields.toString());
             ObjectNode fResponse = Json.newObject();
             fResponse = (ObjectNode)wsResponse.asJson();
@@ -696,7 +708,7 @@ public class Upstream extends UpstreamController {
             fields.put("timestamp", formatDateUpstream()); //agregamos el time
 
             //audit log for points
-            upstreamRequestLogger(client, metadata, event_type);
+            upstreamRequestLogger(client, fields, event_type);
 
             //realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
@@ -704,6 +716,10 @@ public class Upstream extends UpstreamController {
 
             //audit log for responses
             upstreamResponseLogger(client, wsResponse, event_type);
+            String upstreamGuestUserId = Config.getString("upstreamUserID");
+            if(client.getUserId() != null && client.getUserId().equalsIgnoreCase(upstreamGuestUserId)){
+                return;
+            }
 
             checkUpstreamResponseStatus(wsResponse, client, fields.toString());
             ObjectNode fResponse = Json.newObject();
@@ -787,12 +803,16 @@ public class Upstream extends UpstreamController {
     private static String getPushNotificationID(Client client, String channel){
         String push_notification_id = null;
         try {
-            List<ClientHasDevices> devices = client.getDevices();
-            for (int i = 0; i < devices.size(); i++) {
-                if (devices.get(i).getDevice().getName().equalsIgnoreCase(channel)) {
-                    //con el primer push_notification_id nos basta por ahora
-                    push_notification_id = devices.get(i).getRegistrationId();
-                    break;
+            if(client.getUserId() != null && client.getUserId().equalsIgnoreCase(Config.getString("upstreamUserID"))) {
+                push_notification_id = Config.getString("upstreamGuestDeviceId");
+            }else{
+                List<ClientHasDevices> devices = client.getDevices();
+                for (int i = 0; i < devices.size(); i++) {
+                    if (devices.get(i).getDevice().getName().equalsIgnoreCase(channel)) {
+                        //con el primer push_notification_id nos basta por ahora
+                        push_notification_id = devices.get(i).getRegistrationId();
+                        break;
+                    }
                 }
             }
         } catch (Exception e) {
@@ -918,7 +938,7 @@ public class Upstream extends UpstreamController {
         try {
             if (eventType.equalsIgnoreCase("UPD_POINTS")){
                 //log event
-                Logger.of("upstream").trace("id_client:" + client.getIdClient() + " metadata: "+metadata.toString());
+                Logger.of("upstream").trace("id_client:" + client.getIdClient() + " user_id:" + client.getUserId() + " metadata: "+metadata.toString());
             }//else skip
         }catch (Exception ex){
             //do nothing catch to avoid interruptions
@@ -930,7 +950,7 @@ public class Upstream extends UpstreamController {
             if (eventType.equalsIgnoreCase("UPD_POINTS")){
                 int httpResponse = wsResponse.getStatus();
                 //log event
-                Logger.of("upstream").trace("id_client:" + client.getIdClient() + " status:"+httpResponse);
+                Logger.of("upstream").trace("id_client:" + client.getIdClient() + " user_id:" + client.getUserId() + " status:"+httpResponse);
             }//else skip
         }catch (Exception ex){
             //do nothing catch to avoid interruptions
@@ -958,6 +978,14 @@ public class Upstream extends UpstreamController {
         }catch (Exception ex){
             //do nothing catch to avoid interruptions
         }
+    }
+    
+    private static void printRequest(WSRequestHolder urlCall, ObjectNode fields){
+        System.out.println("-----------------------\nheaders: ");
+        for (Map.Entry<String, Collection<String>> entry : urlCall.getHeaders().entrySet()) {
+            System.out.println("\t" + entry.getKey() + " " + entry.getValue());
+        }
+        System.out.println("fields: " + fields + "\n-----------------------");
     }
 
 }

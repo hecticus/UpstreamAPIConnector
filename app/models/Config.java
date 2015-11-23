@@ -148,6 +148,14 @@ public class Config extends Model {
         return Double.parseDouble(c.getValue());
     }
 
+    public static String getAppName() {
+        Config c = finder.where().eq("configKey","app-name").findUnique();
+        if(c != null) {
+            return c.getValue();
+        }
+        return null;
+    }
+
     public static Config getByID(long id){
         return finder.byId(id);
     }
