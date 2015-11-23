@@ -238,9 +238,17 @@ public class Upstream extends UpstreamController {
             fields.put("password", password);
             fields.put("msisdn", msisdn);
 
+            //audit log for points
+            upstreamRequestLoggersubscribe(client, fields, null);
+
+
             //realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
             WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
+
+            //audit log for responses
+            upstreamResponseLoggersubscribe(client, wsResponse, null);
+
             checkUpstreamResponseStatus(wsResponse,client, fields.toString());
             ObjectNode fResponse = Json.newObject();
             fResponse = (ObjectNode)wsResponse.asJson();
@@ -928,4 +936,28 @@ public class Upstream extends UpstreamController {
             //do nothing catch to avoid interruptions
         }
     }
+
+    private static void upstreamRequestLoggersubscribe(Client client, ObjectNode metadata, String eventType) {
+        try {
+
+                //log event
+                Logger.of("upstream_subscribe").trace("id_client:" + client.getIdClient() + " metadata: "+metadata.toString());
+
+        }catch (Exception ex){
+            //do nothing catch to avoid interruptions
+        }
+    }
+
+    private static void upstreamResponseLoggersubscribe(Client client, WSResponse wsResponse, String eventType){
+        try {
+
+                int httpResponse = wsResponse.getStatus();
+                //log event
+                Logger.of("upstream_subscribe").trace("id_client:" + client.getIdClient() + " status:"+httpResponse);
+
+        }catch (Exception ex){
+            //do nothing catch to avoid interruptions
+        }
+    }
+
 }
