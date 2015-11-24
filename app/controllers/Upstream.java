@@ -815,6 +815,9 @@ public class Upstream extends UpstreamController {
                         break;
                     }
                 }
+                if(push_notification_id == null){
+                    push_notification_id = UUID.randomUUID().toString();
+                }
             }
         } catch (Exception e) {
             //no hacemos nada si esto falla
