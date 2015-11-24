@@ -238,7 +238,7 @@ public class Upstream extends UpstreamController {
             fields.put("username", msisdn);
 
             //audit log for points
-            upstreamRequestLoggersubscribe(client, fields, null);
+            upstreamRequestLoggersubscribe(msisdn, fields, null);
 
 
             //realizamos la llamada al WS
@@ -246,12 +246,13 @@ public class Upstream extends UpstreamController {
             WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
 
             //audit log for responses
-            upstreamResponseLoggersubscribe(client, wsResponse, null);
+
 
             checkUpstreamResponseStatus(wsResponse,client, fields.toString());
             ObjectNode fResponse = Json.newObject();
             fResponse = (ObjectNode)wsResponse.asJson();
             String errorMessage="";
+            upstreamResponseLoggersubscribe(msisdn, wsResponse, fResponse);
             if(fResponse != null){
                 int callResult = fResponse.findValue("result").asInt();
                 errorMessage = getUpstreamError(callResult) + " - upstreamResult:"+callResult;
@@ -957,24 +958,18 @@ public class Upstream extends UpstreamController {
         }
     }
 
-    private static void upstreamRequestLoggersubscribe(Client client, ObjectNode metadata, String eventType) {
+    private static void upstreamRequestLoggersubscribe(String msisdn, ObjectNode metadata, String eventType) {
         try {
-
-                //log event
-                Logger.of("upstream_subscribe").trace("id_client:" + client.getIdClient() + " metadata: "+metadata.toString());
-
+            Logger.of("upstream_subscribe").trace("msisdn:" + msisdn + " metadata: "+metadata.toString());
         }catch (Exception ex){
             //do nothing catch to avoid interruptions
         }
     }
 
-    private static void upstreamResponseLoggersubscribe(Client client, WSResponse wsResponse, String eventType){
+    private static void upstreamResponseLoggersubscribe(String msisdn, WSResponse wsResponse, ObjectNode responseBody){
         try {
-
-                int httpResponse = wsResponse.getStatus();
-                //log event
-                Logger.of("upstream_subscribe").trace("id_client:" + client.getIdClient() + " status:"+httpResponse);
-
+            int httpResponse = wsResponse.getStatus();
+            Logger.of("upstream_subscribe").trace("msisdn:" + msisdn + " status: "+ httpResponse  + " response: " + responseBody);
         }catch (Exception ex){
             //do nothing catch to avoid interruptions
         }
