@@ -594,7 +594,7 @@ public class Upstream extends UpstreamController {
             String msisdn = client.getLogin();
             String userID = null;
             String password = null;
-            String push_notification_id = null;
+            String push_notification_id = getPushNotificationID(client, upstreamChannel);
 
             //Data from configs
             String upstreamURL = Config.getString("upstreamURL");
