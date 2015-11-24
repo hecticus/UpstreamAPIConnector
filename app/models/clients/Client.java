@@ -729,6 +729,14 @@ public class Client extends HecticusModel {
     }
 
 
-
+    public static void remindPassword(Client client, ObjectNode clientData) throws Exception {
+        String upstreamChannel;
+        if(clientData.has("upstreamChannel")){
+            upstreamChannel = clientData.get("upstreamChannel").asText();
+        }else{
+            upstreamChannel = "Android"; //"Android" o "Web"
+        }
+        Upstream.resetPasswordForUpstream(client, upstreamChannel);
+    }
 }
 
