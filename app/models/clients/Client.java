@@ -636,6 +636,8 @@ public class Client extends HecticusModel {
 
             if(clientData.has("password")){
                 password = clientData.get("password").asText();
+            } else {
+                password = client.getPassword();
             }
             UUID session = UUID.randomUUID();
             if (clientData.has("devices")) {
@@ -737,6 +739,16 @@ public class Client extends HecticusModel {
             upstreamChannel = "Android"; //"Android" o "Web"
         }
         Upstream.resetPasswordForUpstream(client, upstreamChannel);
+    }
+
+    public static void subscribe(Client client, ObjectNode clientData) throws Exception {
+        String upstreamChannel;
+        if(clientData.has("upstreamChannel")){
+            upstreamChannel = clientData.get("upstreamChannel").asText();
+        }else{
+            upstreamChannel = "Android"; //"Android" o "Web"
+        }
+        Upstream.subscribeUserToUpstream(client, upstreamChannel);
     }
 }
 
