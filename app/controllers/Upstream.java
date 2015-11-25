@@ -238,7 +238,7 @@ public class Upstream extends UpstreamController {
             fields.put("username", msisdn);
 
             //audit log for points
-            upstreamRequestLoggersubscribe(msisdn, fields, null);
+            upstreamRequestLoggersubscribe(msisdn, fields, "subscribe");
 
 
             //realizamos la llamada al WS
@@ -252,7 +252,7 @@ public class Upstream extends UpstreamController {
             ObjectNode fResponse = Json.newObject();
             fResponse = (ObjectNode)wsResponse.asJson();
             String errorMessage="";
-            upstreamResponseLoggersubscribe(msisdn, wsResponse, fResponse);
+            upstreamResponseLoggersubscribe(msisdn, wsResponse, fResponse, "subscribe");
             if(fResponse != null){
                 int callResult = fResponse.findValue("result").asInt();
                 errorMessage = getUpstreamError(callResult) + " - upstreamResult:"+callResult;
@@ -607,12 +607,15 @@ public class Upstream extends UpstreamController {
             ObjectNode fields = getBasicUpstreamPOSTRequestJSON(upstreamChannel, push_notification_id, null, client.getSession());
             fields.put("msisdn", msisdn); //agregamos el UserID al request
 
+            upstreamRequestLoggersubscribe(msisdn, fields, "reset");
+
             //realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
             WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
             checkUpstreamResponseStatus(wsResponse,client, fields.toString());
             ObjectNode fResponse = Json.newObject();
             fResponse = (ObjectNode)wsResponse.asJson();
+            upstreamResponseLoggersubscribe(msisdn, wsResponse, fResponse, "reset");
             if(fResponse != null){
                 int callResult = fResponse.findValue("result").asInt();
                 errorMessage = getUpstreamError(callResult) + " - upstreamResult:"+callResult;
@@ -963,16 +966,16 @@ public class Upstream extends UpstreamController {
 
     private static void upstreamRequestLoggersubscribe(String msisdn, ObjectNode metadata, String eventType) {
         try {
-            Logger.of("upstream_subscribe").trace("msisdn:" + msisdn + " metadata: "+metadata.toString());
+            Logger.of("upstream_subscribe").trace(eventType + " msisdn:" + msisdn + " metadata: "+metadata.toString());
         }catch (Exception ex){
             //do nothing catch to avoid interruptions
         }
     }
 
-    private static void upstreamResponseLoggersubscribe(String msisdn, WSResponse wsResponse, ObjectNode responseBody){
+    private static void upstreamResponseLoggersubscribe(String msisdn, WSResponse wsResponse, ObjectNode responseBody, String eventType){
         try {
             int httpResponse = wsResponse.getStatus();
-            Logger.of("upstream_subscribe").trace("msisdn:" + msisdn + " status: "+ httpResponse  + " response: " + responseBody);
+            Logger.of("upstream_subscribe").trace(eventType + " msisdn:" + msisdn + " status: "+ httpResponse  + " response: " + responseBody);
         }catch (Exception ex){
             //do nothing catch to avoid interruptions
         }
