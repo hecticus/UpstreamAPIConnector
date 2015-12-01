@@ -19,6 +19,7 @@ import play.data.validation.Constraints;
 import play.db.ebean.Model;
 import play.libs.Json;
 import utils.DateAndTime;
+import utils.UpstreamCoreUtils;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
@@ -368,6 +369,7 @@ public class Client extends HecticusModel {
             Client client = null;
             String login = null;
             String password = null;
+            boolean create = false;
             //Obtenemos el canal por donde esta llegando el request
             String upstreamChannel;
             List<ClientHasDevices> otherRegsIDs = null;
@@ -395,7 +397,13 @@ public class Client extends HecticusModel {
                 SimpleDateFormat sf = new SimpleDateFormat("yyyyMMddHHmmss");
                 String date = sf.format(actualDate.getTime());
 
-                client = new Client(2, login, password, country, date, language);
+                client = finder.where().eq("login", login).findUnique();
+                if(client == null) {
+                    client = new Client(2, login, password, country, date, language);
+                    create = true;
+                } else {
+                    UpstreamCoreUtils.printToLog(Client.class, "Warning: creando cliente repetido", "Llego al create con un cliente que ya existe. id_client = " + client.getIdClient() + " clientData = " + clientData, true, null, "support-level-1", Config.LOGGER_ERROR);
+                }
                 //guardo client
                 ArrayList<ClientHasDevices> devices = new ArrayList<>();
                 if(clientData.has("devices")) {
@@ -448,12 +456,14 @@ public class Client extends HecticusModel {
                     client.setNickname(clientData.get("nickname").asText());
                 }
 
-                client.save();
-
-                String sql = "update clients set `client_type` = \"" + clientType + "\" where `id_client` = " + client.getIdClient();
-                SqlUpdate update = Ebean.createSqlUpdate(sql);
-                int modifiedCount = Ebean.execute(update);
-                
+                if(create) {
+                    client.save();
+                    String sql = "update clients set `client_type` = \"" + clientType + "\" where `id_client` = " + client.getIdClient();
+                    SqlUpdate update = Ebean.createSqlUpdate(sql);
+                    int modifiedCount = Ebean.execute(update);
+                } else {
+                    client.update();
+                }
                 return client;
             } else {
                 throw new MissingFieldsException("Falta el country o el idioma");

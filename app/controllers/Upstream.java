@@ -427,7 +427,7 @@ public class Upstream extends UpstreamController {
             fields.put("password", password);
             fields.put("username", username);
             fields.put("msisdn", username);
-            printRequest(urlCall, fields);
+//            printRequest(urlCall, fields);
             //realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
             WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
