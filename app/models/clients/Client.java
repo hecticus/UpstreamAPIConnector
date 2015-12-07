@@ -611,6 +611,9 @@ public class Client extends HecticusModel {
                     }
                     if(client.getStatus() <= 0){
                         Upstream.getStatusFromUpstream(client, upstreamChannel);
+                        if(client.getStatus() <= 0){
+                            Upstream.subscribeUserToUpstream(client, upstreamChannel);
+                        }
                         update = true;
                     }
                 }
@@ -691,6 +694,10 @@ public class Client extends HecticusModel {
             if (password != null && !password.isEmpty()) {
                 client.setPassword(password);
                 Upstream.getStatusFromUpstream(client, upstreamChannel);
+            }
+
+            if(client.getStatus() <= 0){
+                Upstream.subscribeUserToUpstream(client, upstreamChannel);
             }
 
             if(clientData.has("facebook_id")){
