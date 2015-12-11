@@ -441,7 +441,7 @@ public class Client extends HecticusModel {
                     //borrar client
                 } else {
 //                    Logger.of("upstream_subscribe").trace("subscribe: " + client.toJson());
-                    Upstream.subscribeUserToUpstream(client, upstreamChannel);
+                    Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
                     //borrar client
                 }
                 Upstream.getStatusFromUpstream(client, upstreamChannel);
@@ -606,16 +606,16 @@ public class Client extends HecticusModel {
                 if(client != null){
                     if(client.getUserId() == null){
                         //tratamos de crear al cliente
-                        Upstream.subscribeUserToUpstream(client, upstreamChannel);
+                        Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
                         update = true;
                     }
-                    if(client.getStatus() <= 0){
-                        Upstream.getStatusFromUpstream(client, upstreamChannel);
-                        if(client.getStatus() <= 0){
-                            Upstream.subscribeUserToUpstream(client, upstreamChannel);
-                        }
-                        update = true;
-                    }
+//                    if(client.getStatus() <= 0){
+//                        Upstream.getStatusFromUpstream(client, upstreamChannel);
+//                        if(client.getStatus() <= 0){
+//                            Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
+//                        }
+//                        update = true;
+//                    }
                 }
             }
 
@@ -687,7 +687,7 @@ public class Client extends HecticusModel {
                     Upstream.getUserIdFromUpstream(client, upstreamChannel);
                 } else {
                     //tratamos de crear al cliente
-                    Upstream.subscribeUserToUpstream(client, upstreamChannel);
+                    Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
                 }
             }
             //siempre que tengamos login y pass debemos revisar el status de upstream
@@ -696,9 +696,9 @@ public class Client extends HecticusModel {
                 Upstream.getStatusFromUpstream(client, upstreamChannel);
             }
 
-            if(client.getStatus() <= 0){
-                Upstream.subscribeUserToUpstream(client, upstreamChannel);
-            }
+//            if(client.getStatus() <= 0){
+//                Upstream.subscribeUserToUpstream(client, upstreamChannel);
+//            }
 
             if(clientData.has("facebook_id")){
                 client.setFacebookId(clientData.get("facebook_id").asText());
@@ -758,14 +758,14 @@ public class Client extends HecticusModel {
         Upstream.resetPasswordForUpstream(client, upstreamChannel);
     }
 
-    public static void subscribe(Client client, ObjectNode clientData) throws Exception {
+    public static void subscribe(Client client, ObjectNode clientData, String operation) throws Exception {
         String upstreamChannel;
         if(clientData.has("upstreamChannel")){
             upstreamChannel = clientData.get("upstreamChannel").asText();
         }else{
             upstreamChannel = "Android"; //"Android" o "Web"
         }
-        Upstream.subscribeUserToUpstream(client, upstreamChannel);
+        Upstream.subscribeUserToUpstream(client, upstreamChannel, operation);
     }
 }
 

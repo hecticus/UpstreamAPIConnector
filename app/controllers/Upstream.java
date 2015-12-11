@@ -204,7 +204,7 @@ public class Upstream extends UpstreamController {
      * channel   "Android" or "Web"
      *
      */
-    public static void subscribeUserToUpstream(Client client, String upstreamChannel) throws UpstreamException{
+    public static void subscribeUserToUpstream(Client client, String upstreamChannel, String operation) throws UpstreamException{
         String upstreamGuestUser = Config.getString("upstreamGuestUser");
         if(client.getLogin() == null || client.getLogin().equalsIgnoreCase(upstreamGuestUser)){
             if(client.getLogin() == null){
@@ -238,7 +238,7 @@ public class Upstream extends UpstreamController {
             fields.put("username", msisdn);
 
             //audit log for points
-            upstreamRequestLoggersubscribe(msisdn, fields, "subscribe");
+            upstreamRequestLoggersubscribe(msisdn, fields, operation);
 
 
             //realizamos la llamada al WS
