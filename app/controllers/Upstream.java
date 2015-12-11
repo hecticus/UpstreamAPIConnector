@@ -764,7 +764,7 @@ public class Upstream extends UpstreamController {
 
         String authString = null;
         if(username != null && !username.isEmpty() && password != null && !password.isEmpty()){
-            authString = username+":"+password;
+            authString = username+":"+password.toUpperCase();
             byte[] encodedBytes = Base64.encodeBase64(authString.getBytes());
             authString = new String(encodedBytes);
         }
