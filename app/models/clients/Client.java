@@ -383,7 +383,7 @@ public class Client extends HecticusModel {
 
             }
             if(clientData.has("password")){
-                password = clientData.get("password").asText();
+                password = clientData.get("password").asText().toUpperCase();
             }
             UUID session = UUID.randomUUID();
 
@@ -497,7 +497,7 @@ public class Client extends HecticusModel {
             }
 
             if(clientData.has("password")){
-                client.setPassword(clientData.get("password").asText());
+                client.setPassword(clientData.get("password").asText().toUpperCase());
                 loginAgain = true;
                 update = true;
             }
