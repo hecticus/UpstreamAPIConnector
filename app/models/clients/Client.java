@@ -648,9 +648,9 @@ public class Client extends HecticusModel {
             }
 
             if(clientData.has("password")){
-                password = clientData.get("password").asText();
+                password = clientData.get("password").asText().toUpperCase();
             } else {
-                password = client.getPassword();
+                password = client.getPassword().toUpperCase();
             }
             UUID session = UUID.randomUUID();
             if (clientData.has("devices")) {
