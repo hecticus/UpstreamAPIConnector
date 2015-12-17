@@ -238,7 +238,7 @@ public class Upstream extends UpstreamController {
             fields.put("username", msisdn);
 
             //audit log for points
-            upstreamRequestLoggersubscribe(msisdn, fields, operation);
+            upstreamRequestLoggersubscribe(msisdn, fields, operation, url);
 
 
             //realizamos la llamada al WS
@@ -252,7 +252,7 @@ public class Upstream extends UpstreamController {
             ObjectNode fResponse = Json.newObject();
             fResponse = (ObjectNode)wsResponse.asJson();
             String errorMessage="";
-            upstreamResponseLoggersubscribe(msisdn, wsResponse, fResponse, "subscribe");
+            upstreamResponseLoggersubscribe(msisdn, wsResponse, fResponse, operation);
             if(fResponse != null){
                 int callResult = fResponse.findValue("result").asInt();
                 errorMessage = getUpstreamError(callResult) + " - upstreamResult:"+callResult;
@@ -519,7 +519,7 @@ public class Upstream extends UpstreamController {
             ObjectNode fields = getBasicUpstreamPOSTRequestJSON(upstreamChannel, push_notification_id, null, client.getSession());
             fields.put("user_id", userID); //agregamos el UserID al request
 
-            upstreamRequestLoggersubscribe(username, fields, "status");
+            upstreamRequestLoggersubscribe(username, fields, "status", url);
 
             //realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
@@ -610,7 +610,7 @@ public class Upstream extends UpstreamController {
             ObjectNode fields = getBasicUpstreamPOSTRequestJSON(upstreamChannel, push_notification_id, null, client.getSession());
             fields.put("msisdn", msisdn); //agregamos el UserID al request
 
-            upstreamRequestLoggersubscribe(msisdn, fields, "reset");
+            upstreamRequestLoggersubscribe(msisdn, fields, "reset", url);
 
             //realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
@@ -967,9 +967,9 @@ public class Upstream extends UpstreamController {
         }
     }
 
-    private static void upstreamRequestLoggersubscribe(String msisdn, ObjectNode metadata, String eventType) {
+    private static void upstreamRequestLoggersubscribe(String msisdn, ObjectNode metadata, String eventType, String url) {
         try {
-            Logger.of("upstream_subscribe").trace(eventType + " msisdn:" + msisdn + " metadata: "+metadata.toString());
+            Logger.of("upstream_subscribe").trace(eventType + " url: " + url + " msisdn:" + msisdn + " metadata: "+metadata.toString());
         }catch (Exception ex){
             //do nothing catch to avoid interruptions
         }
