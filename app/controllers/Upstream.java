@@ -218,7 +218,7 @@ public class Upstream extends UpstreamController {
             }
             client.setStatus(2);
         } else {
-            if(client.getUserId().equalsIgnoreCase("0")){
+            if(client.getUserId() != null && client.getUserId().equalsIgnoreCase("0")){
                 getUserIdFromUpstream(client, upstreamChannel);
             }
             String msisdn = client.getLogin();
