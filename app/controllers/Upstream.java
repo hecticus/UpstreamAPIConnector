@@ -218,6 +218,9 @@ public class Upstream extends UpstreamController {
             }
             client.setStatus(2);
         } else {
+            if(client.getUserId().equalsIgnoreCase("0")){
+                getUserIdFromUpstream(client, upstreamChannel);
+            }
             String msisdn = client.getLogin();
             String password = client.getPassword();
             String push_notification_id = null;
