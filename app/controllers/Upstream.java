@@ -428,6 +428,7 @@ public class Upstream extends UpstreamController {
             fields.put("username", username);
             fields.put("msisdn", username);
 //            printRequest(urlCall, fields);
+            upstreamRequestLoggersubscribe(username, fields, "get_id", url);
             //realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
             WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
@@ -440,6 +441,7 @@ public class Upstream extends UpstreamController {
             checkUpstreamResponseStatus(wsResponse,client, fields.toString());
             ObjectNode fResponse = Json.newObject();
             fResponse = (ObjectNode)wsResponse.asJson();
+            upstreamResponseLoggersubscribe(username, wsResponse, fResponse, "get_id");
             String errorMessage="";
             if(fResponse != null){
                 int callResult = fResponse.findValue("result").asInt();
