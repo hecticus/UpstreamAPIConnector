@@ -260,11 +260,13 @@ public class Upstream extends UpstreamController {
                 int callResult = fResponse.findValue("result").asInt();
                 errorMessage = getUpstreamError(callResult) + " - upstreamResult:"+callResult;
                 //TODO: revisar si todos estos casos devuelven con exito la llamada o algunos si se consideran errores
-                if(callResult == 0 || callResult == 1 || callResult == 0 || callResult == 6){
+                if(callResult == 0) {
                     //Se trajo la informacion con exito
                     String userID = fResponse.findValue(upstreamUserIDSubscriptionResponseTag).asText();
                     //TODO: guardar el userID en la info del cliente
                     client.setUserId(userID);
+                } else if(callResult == 1 || callResult == 6){
+                    //exito pero hay un bug en Upstreams q setea el user a 0
                 }else{
                     //ocurrio un error en la llamada
                     throw new UpstreamException(callResult, errorMessage, fields.toString());
@@ -430,7 +432,7 @@ public class Upstream extends UpstreamController {
             fields.put("password", password);
             fields.put("username", username);
             fields.put("msisdn", username);
-//            printRequest(urlCall, fields);
+            printRequest(urlCall, fields);
             upstreamRequestLoggersubscribe(username, fields, "get_id", url);
             //realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
@@ -524,6 +526,7 @@ public class Upstream extends UpstreamController {
             ObjectNode fields = getBasicUpstreamPOSTRequestJSON(upstreamChannel, push_notification_id, null, client.getSession());
             fields.put("user_id", userID); //agregamos el UserID al request
 
+            printRequest(urlCall, fields);
             upstreamRequestLoggersubscribe(username, fields, "status", url);
 
             //realizamos la llamada al WS
