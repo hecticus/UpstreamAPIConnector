@@ -30,7 +30,7 @@ public class Clients extends UpstreamController {
                 login = clientData.get("login").asText();
             }
             if(login != null) {
-                client = Client.getAndUpdate(login, clientData);
+                client = Client.getAndUpdate(login, clientData, false);
                 if (client != null) {
                     return ok(buildBasicResponse(0, "OK", client.toJson()));
                 }
