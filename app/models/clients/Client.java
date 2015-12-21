@@ -435,15 +435,15 @@ public class Client extends HecticusModel {
                 }
                 client.setDevices(devices);
 
-                if (client.getPassword() != null && !client.getPassword().isEmpty()) {
-//                    Logger.of("upstream_subscribe").trace("status: " + client.toJson());
-                    Upstream.getUserIdFromUpstream(client, upstreamChannel);
-                    //borrar client
-                } else {
+//                if (client.getPassword() != null && !client.getPassword().isEmpty()) {
+////                    Logger.of("upstream_subscribe").trace("status: " + client.toJson());
+//                    Upstream.getUserIdFromUpstream(client, upstreamChannel);
+//                    //borrar client
+//                } else {
 //                    Logger.of("upstream_subscribe").trace("subscribe: " + client.toJson());
                     Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
                     //borrar client
-                }
+//                }
                 Upstream.getStatusFromUpstream(client, upstreamChannel);
 
                 client.setSession(session.toString());
