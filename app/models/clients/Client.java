@@ -696,9 +696,9 @@ public class Client extends HecticusModel {
                 Upstream.getStatusFromUpstream(client, upstreamChannel);
             }
 
-//            if(client.getStatus() <= 0){
-//                Upstream.subscribeUserToUpstream(client, upstreamChannel);
-//            }
+            if(client.getStatus() <= 0){
+                Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe_on_eligible_false");
+            }
 
             if(clientData.has("facebook_id")){
                 client.setFacebookId(clientData.get("facebook_id").asText());
