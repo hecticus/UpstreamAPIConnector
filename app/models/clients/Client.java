@@ -634,7 +634,7 @@ public class Client extends HecticusModel {
         return client;
     }
 
-    public static Client getAndUpdate(String login, ObjectNode clientData) throws UpstreamException {
+    public static Client getAndUpdate(String login, ObjectNode clientData, boolean isRemind) throws UpstreamException {
         Logger.of("upstream_subscribe").trace("getAndUpdate " + login);
         Client client = finder.where().eq("login", login).findUnique();
         if (client != null) {
@@ -698,7 +698,7 @@ public class Client extends HecticusModel {
             }
 
             Logger.of("upstream_subscribe").trace("client.getStatus(" + login + ") = " + client.getStatus());
-            if(client.getStatus() <= 0){
+            if(!isRemind && client.getStatus() <= 0){
                 Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe_on_eligible_false");
             }
 
