@@ -697,10 +697,10 @@ public class Client extends HecticusModel {
                 Upstream.getStatusFromUpstream(client, upstreamChannel);
             }
 
-            Logger.of("upstream_subscribe").trace("client.getStatus(" + login + ") = " + client.getStatus());
-            if(!isRemind && client.getStatus() <= 0){
-                Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe_on_eligible_false");
-            }
+//            Logger.of("upstream_subscribe").trace("client.getStatus(" + login + ") = " + client.getStatus());
+//            if(!isRemind && client.getStatus() <= 0){
+//                Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe_on_eligible_false");
+//            }
 
             if(clientData.has("facebook_id")){
                 client.setFacebookId(clientData.get("facebook_id").asText());
