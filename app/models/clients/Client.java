@@ -435,14 +435,22 @@ public class Client extends HecticusModel {
                 }
                 client.setDevices(devices);
 
+                /*mircea y ronaldinhogauchoo dijeron el 1/2/2015 que mande subscribe siempre
+                [11:46:20] Iñaki Plessmann: so, i ask. should i send subscribe no matter the case? even if the user supplies msisdn and password?
+                [11:47:22] Mircea Sulger: yes
+                ...
+                [11:48:32] Mircea Sulger: just send subscribe call with the MSISDN he enters
+                  */
+                Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
+
                 if (client.getPassword() != null && !client.getPassword().isEmpty()) {
 //                    Logger.of("upstream_subscribe").trace("status: " + client.toJson());
                     Upstream.getUserIdFromUpstream(client, upstreamChannel);
                     //borrar client
-                } else {
-//                    Logger.of("upstream_subscribe").trace("subscribe: " + client.toJson());
-                    Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
-                    //borrar client
+//                } else {
+////                    Logger.of("upstream_subscribe").trace("subscribe: " + client.toJson());
+//                    Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
+//                    //borrar client
                 }
                 Upstream.getStatusFromUpstream(client, upstreamChannel);
 
