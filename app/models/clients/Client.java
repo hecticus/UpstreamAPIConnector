@@ -435,24 +435,15 @@ public class Client extends HecticusModel {
                 }
                 client.setDevices(devices);
 
-                /*
-                ronaldinhogauchoo insistio en que mandasemos esto siempre en la conversacion de skype el 1/2/2015
-                [10:59:16] ronaldinhogauchoo: you send ALWAYS subscribe and we check
-
-                    a)if the user subscribed send the pass
-                    b)if the user is not subscribed send a prompt to subscribe to the service
-                 */
-                Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
-
                 if (client.getPassword() != null && !client.getPassword().isEmpty()) {
 //                    Logger.of("upstream_subscribe").trace("status: " + client.toJson());
                     Upstream.getUserIdFromUpstream(client, upstreamChannel);
                     //borrar client
-                } //else {
+                } else {
 //                    Logger.of("upstream_subscribe").trace("subscribe: " + client.toJson());
-//                    Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
+                    Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
                     //borrar client
-//                }
+                }
                 Upstream.getStatusFromUpstream(client, upstreamChannel);
 
                 client.setSession(session.toString());
