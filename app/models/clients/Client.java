@@ -724,6 +724,68 @@ public class Client extends HecticusModel {
         return client;
     }
 
+    public static Client getNoCallUpstream(String login, ObjectNode clientData, boolean isRemind) throws UpstreamException {
+        Logger.of("upstream_subscribe").trace("getAndUpdate " + login);
+        Client client = finder.where().eq("login", login).findUnique();
+        if (client != null) {
+            String password = null;
+            //Obtenemos el canal por donde esta llegando el request
+            String upstreamChannel;
+            List<ClientHasDevices> otherRegsIDs = null;
+            if(clientData.has("upstreamChannel")){
+                upstreamChannel = clientData.get("upstreamChannel").asText();
+            }else{
+                upstreamChannel = "Android"; //"Android" o "Web"
+            }
+
+            if(clientData.has("password")){
+                password = clientData.get("password").asText().toUpperCase();
+            } else {
+                password = client.getPassword().toUpperCase();
+            }
+            UUID session = UUID.randomUUID();
+            if (clientData.has("devices")) {
+                Iterator<JsonNode> devicesIterator = clientData.get("devices").elements();
+                while (devicesIterator.hasNext()) {
+                    ObjectNode next = (ObjectNode) devicesIterator.next();
+                    if (next.has("device_id") && next.has("registration_id")) {
+                        String registrationId = next.get("registration_id").asText();
+                        int deviceId = next.get("device_id").asInt();
+                        Device device = Device.finder.byId(deviceId);
+                        ClientHasDevices clientHasDevice = ClientHasDevices.finder.where().eq("client", client).eq("registrationId", registrationId).eq("device", device).findUnique();
+                        if (clientHasDevice == null) {
+                            clientHasDevice = new ClientHasDevices(client, device, registrationId);
+                            client.getDevices().add(clientHasDevice);
+                        }
+                        otherRegsIDs = ClientHasDevices.finder.where().ne("client", client).eq("registrationId", registrationId).eq("device", device).findList();
+                        if (otherRegsIDs != null && !otherRegsIDs.isEmpty()) {
+                            for (ClientHasDevices clientHasDevices : otherRegsIDs) {
+                                clientHasDevices.delete();
+                            }
+                        }
+                    }
+                }
+            } else {
+                int webDeviceId = Config.getInt("web-device-id");
+                Device device = Device.finder.byId(webDeviceId);
+                ClientHasDevices clientHasDevice = new ClientHasDevices(client, device, UUID.randomUUID().toString());
+                client.getDevices().add(clientHasDevice);
+            }
+
+            if(clientData.has("facebook_id")){
+                client.setFacebookId(clientData.get("facebook_id").asText());
+            }
+
+            if(clientData.has("nickname")){
+                client.setNickname(clientData.get("nickname").asText());
+            }
+
+            client.setSession(session.toString());
+            client.update();
+        }
+        return client;
+    }
+
     public static Client getAndCheckStatus(int id, String upstreamChannel) throws ParseException, UpstreamException {
         Client client = Client.finder.byId(id);
         if(client != null) {

@@ -117,6 +117,7 @@ public class Upstream extends UpstreamController {
         String event_type = null;
         try{
             ObjectNode clientData = getJson();
+            Logger.of("upstream_subscribe").trace("sendClientEvent -> app_request: " + clientData);
             if(clientData == null){
                 return badRequest(buildBasicResponse(1, "Falta el json con los parametros del request"));
             }
