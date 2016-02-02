@@ -142,7 +142,9 @@ public class Upstream extends UpstreamController {
                 }
 
                 if (event_type != null || !event_type.isEmpty()) {
-                    sendEventForUpstream(client, upstreamChannel, event_type, metadata);
+                    if(!event_type.equalsIgnoreCase("VIEW_SP") && !event_type.equalsIgnoreCase("CLICK_SP")) {
+                        sendEventForUpstream(client, upstreamChannel, event_type, metadata);
+                    }
                     return ok(buildBasicResponse(0, "OK", client.toJson()));
                 } else {
                     return badRequest(buildBasicResponse(3, "Falta el tipo de evento"));
