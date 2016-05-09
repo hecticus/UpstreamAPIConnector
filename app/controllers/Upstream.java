@@ -246,8 +246,6 @@ public class Upstream extends UpstreamController {
             WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
 
             //audit log for responses
-
-
             checkUpstreamResponseStatus(wsResponse,client, fields.toString());
             ObjectNode fResponse = Json.newObject();
             fResponse = (ObjectNode)wsResponse.asJson();
@@ -411,10 +409,11 @@ public class Upstream extends UpstreamController {
                 client.setUserId(Config.getString("upstreamUserID"));
             }
             client.setStatus(2);
-        } else {
+        } else{
             String username = client.getLogin();
             String password = client.getPassword();
             String push_notification_id = getPushNotificationID(client, upstreamChannel);
+
             //Data from configs
             String upstreamURL = Config.getString("upstreamURL");
             String url = upstreamURL + UPSTREAM_LOGIN_URL;
@@ -427,8 +426,8 @@ public class Upstream extends UpstreamController {
             fields.put("password", password);
             fields.put("username", username);
             fields.put("msisdn", username);
-//            printRequest(urlCall, fields);
-            //realizamos la llamada al WS
+             // printRequest(urlCall, fields);
+            //  realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
             WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
 
@@ -457,6 +456,23 @@ public class Upstream extends UpstreamController {
                 errorMessage = "Web service call to Upstream failed";
                 throw new UpstreamException(-1, errorMessage, fields.toString());
             }
+        }
+    }
+
+    public static void getUserIdANDLogin(Client client, String upstreamChannel) throws UpstreamException{
+
+        if(client.getLogin() != null){
+            String errorMessage="";
+            Client clientTemp = Client.getByLogin(client.getLogin().toString());
+            if(clientTemp.getIdClient() != null){
+               client.setUserId(clientTemp.getUserId());
+            }else{
+                errorMessage = "Problema Realizando Loguin User -- Usuario no Registrado";
+                throw new UpstreamException(-1, errorMessage);
+            }
+
+        }else{
+            client.setStatus(2);
         }
     }
 

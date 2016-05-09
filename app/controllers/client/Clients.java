@@ -35,6 +35,9 @@ public class Clients extends UpstreamController {
                     return ok(buildBasicResponse(0, "OK", client.toJson()));
                 }
             }
+
+
+
             client = Client.create("upstream", clientData);
             return created(buildBasicResponse(0, "OK", client.toJson()));
         } catch (Exception ex) {

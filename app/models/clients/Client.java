@@ -435,17 +435,6 @@ public class Client extends HecticusModel {
                 }
                 client.setDevices(devices);
 
-                if (client.getPassword() != null && !client.getPassword().isEmpty()) {
-//                    Logger.of("upstream_subscribe").trace("status: " + client.toJson());
-                    Upstream.getUserIdFromUpstream(client, upstreamChannel);
-                    //borrar client
-                } else {
-//                    Logger.of("upstream_subscribe").trace("subscribe: " + client.toJson());
-                    Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
-                    //borrar client
-                }
-                Upstream.getStatusFromUpstream(client, upstreamChannel);
-
                 client.setSession(session.toString());
 
                 if(clientData.has("facebook_id")){
@@ -582,10 +571,10 @@ public class Client extends HecticusModel {
                 }
             }
 
-            if(loginAgain && (client.getLogin() != null && !client.getLogin().isEmpty()) && (client.getPassword() != null && !client.getPassword().isEmpty())){
-                Upstream.getUserIdFromUpstream(client, upstreamChannel);
-                Upstream.getStatusFromUpstream(client, upstreamChannel);
-            }
+//            if(loginAgain && (client.getLogin() != null && !client.getLogin().isEmpty()) && (client.getPassword() != null && !client.getPassword().isEmpty())){
+//                Upstream.getUserIdFromUpstream(client, upstreamChannel);
+//                Upstream.getStatusFromUpstream(client, upstreamChannel);
+//            }
 
             if(clientData.has("facebook_id")){
                 String facebookId = clientData.get("facebook_id").asText();
@@ -599,24 +588,6 @@ public class Client extends HecticusModel {
             if(clientData.has("nickname")){
                 client.setNickname(clientData.get("nickname").asText());
                 update = true;
-            }
-
-            //si pedimos que se suscriba debe hacerse
-            if(clientData.has("subscribe") && clientData.has("login")){
-                if(client != null){
-                    if(client.getUserId() == null){
-                        //tratamos de crear al cliente
-                        Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
-                        update = true;
-                    }
-//                    if(client.getStatus() <= 0){
-//                        Upstream.getStatusFromUpstream(client, upstreamChannel);
-//                        if(client.getStatus() <= 0){
-//                            Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
-//                        }
-//                        update = true;
-//                    }
-                }
             }
 
             if(update){
@@ -684,7 +655,7 @@ public class Client extends HecticusModel {
                 //si tenemos password tratamos de hacer login
                 if (password != null && !password.isEmpty()) {
                     client.setPassword(password);
-                    Upstream.getUserIdFromUpstream(client, upstreamChannel);
+                    Upstream.getUserIdANDLogin(client, upstreamChannel);
                 } else {
                     //tratamos de crear al cliente
                     Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
