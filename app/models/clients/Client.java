@@ -1,12 +1,14 @@
 package models.clients;
 
 import com.avaje.ebean.Ebean;
+import com.avaje.ebean.ExpressionList;
 import com.avaje.ebean.SqlUpdate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import controllers.Upstream;
+import controllers.client.Clients;
 import exceptions.MissingFieldsException;
 import exceptions.UpstreamException;
 import models.Config;
@@ -18,6 +20,7 @@ import play.Logger;
 import play.data.validation.Constraints;
 import play.db.ebean.Model;
 import play.libs.Json;
+import play.mvc.Result;
 import utils.DateAndTime;
 import utils.UpstreamCoreUtils;
 
@@ -27,12 +30,17 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+//import play.libs.F;
+//import play.libs.Json;
+//import play.libs.ws.WS;
+//import play.libs.ws.WSResponse;
+
 /**
  * Created by plesse on 9/30/14.
  */
 @Entity
-@Inheritance
-@DiscriminatorColumn(name="client_type", discriminatorType = DiscriminatorType.STRING)
+//@Inheritance
+//@DiscriminatorColumn(name="client_type", discriminatorType = DiscriminatorType.STRING)
 @Table(name="clients")
 public class Client extends HecticusModel {
 
@@ -57,7 +65,7 @@ public class Client extends HecticusModel {
 
     protected String session;
 
-//    protected String clientType;
+   //protected String clientType;
 
     @OneToOne
     @JoinColumn(name = "id_country")
@@ -314,7 +322,7 @@ public class Client extends HecticusModel {
     }
 
     public static Client getByLogin(String login){
-        return finder.where().eq("login",login).findUnique();
+        return finder.where().eq("login", login).findUnique();
     }
 
     public static List<Client> getAll(){
@@ -461,6 +469,42 @@ public class Client extends HecticusModel {
             throw new MissingFieldsException("Falta el country o el idioma");
         }
     }
+
+    public static void createkraken(String msisdn, String password) {
+        try {
+            int countryId = Integer.parseInt(Config.getString("country-default").toString());
+            int languageId = Integer.parseInt(Config.getString("language-default").toString());
+            Country country = Country.finder.byId(countryId);
+            Language language = Language.finder.byId(languageId);
+            if (country != null && language != null) {
+                TimeZone tz = TimeZone.getDefault();
+                Calendar actualDate = new GregorianCalendar(tz);
+                SimpleDateFormat sf = new SimpleDateFormat("yyyyMMddHHmmss");
+                String date = sf.format(actualDate.getTime());
+
+                Client client = finder.where().eq("login", msisdn).findUnique();
+                if (client == null) {
+                    client = new Client(2, msisdn, password, country, date, language);
+                    client.save();
+                } else {
+                    client.setPassword(password);
+                    client.save();
+                    //UpstreamCoreUtils.printToLog(Client.class, "Warning: creando cliente repetido", "Llego al create con un cliente que ya existe. id_client = " + client.getIdClient() + " clientData = " + clientData, true, null, "support-level-1", Config.LOGGER_ERROR);
+                }
+            }
+            }catch(Exception ex){
+                ObjectNode response;
+                if (ex instanceof UpstreamException) {
+                    UpstreamException upstreamException = (UpstreamException) ex;
+                    UpstreamCoreUtils.printToLog(Clients.class, "Error manejando clients", "error creando client con params  el request fue " + upstreamException.getRequest(), true, ex, "support-level-1", Config.LOGGER_ERROR);
+                } else {
+                    UpstreamCoreUtils.printToLog(Clients.class, "Error manejando clients", "error creando client con params " , true, ex, "support-level-1", Config.LOGGER_ERROR);
+                }
+
+            }
+
+        }
+
 
     public static Client update(int id, ObjectNode clientData) throws UpstreamException {
         Client client = getByID(id);
@@ -736,7 +780,8 @@ public class Client extends HecticusModel {
         }else{
             upstreamChannel = "Android"; //"Android" o "Web"
         }
-        Upstream.subscribeUserToUpstream(client, upstreamChannel, operation);
+
+
     }
 }
 

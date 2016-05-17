@@ -1,6 +1,7 @@
 package controllers;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import exceptions.UpstreamException;
 import models.Config;
 import models.clients.Client;
@@ -654,6 +655,84 @@ public class Upstream extends UpstreamController {
         }
     }
 
+    public static Result SendUnitPass() throws Exception{
+        String msisdn = "";
+        try{
+            ObjectNode response = null;
+            ObjectNode clientData = getJson();
+            Client client = null;
+            //Obtenemos el canal por donde esta llegando el request
+            String unitChannel;
+            if(clientData.has("unitChannel")){
+                unitChannel = clientData.get("unitChannel").asText();
+            }else{
+                unitChannel = "Android"; //"Android" o "Web"
+            }
+            //buscamos el msisdn
+            if(clientData.has("msisdn")){
+                msisdn = clientData.get("msisdn").asText();
+                client = Client.getByLogin(msisdn);
+            }
+            if(client != null) {
+                MtPasswordForUnit(client,unitChannel);
+
+                response = buildBasicResponse(0, "OK", client.toJson());
+            } else {
+                response = buildBasicResponse(2, "no existe el registro para hacer Recuperar del pass");
+            }
+            return ok(response);
+        } catch (Exception ex) {
+           UpstreamCoreUtils.printToLog(Upstream.class, "Error manejando clients", "error recuperando el password de unit del client " + msisdn, true, ex, "support-level-1", Config.LOGGER_ERROR);
+            return Results.badRequest(buildBasicResponse(3, "ocurrio un error recuperando password", ex));
+        }
+    }
+
+    public static void MtPasswordForUnit(Client client, String unitChannel)throws Exception{
+        String errorMessage = "";
+        if(client.getLogin() != null){
+            String msisdn = client.getLogin();
+            String userID = client.getUserId();
+            String password = client.getPassword();
+            String push_notification_id = getPushNotificationID(client, unitChannel);
+
+            //Data from configs
+            String unitURL = Config.getString("upstreamURL");
+            String url = unitURL + UPSTREAM_PASSWORD_URL;
+
+            //Hacemos la llamada con los headers de autenticacion
+            WSRequestHolder urlCall = setUpstreamRequest(url, msisdn, password);
+
+            //llenamos el JSON a enviar
+            ObjectNode fields = getBasicUpstreamPOSTRequestJSON(unitChannel, push_notification_id, null, client.getSession());
+            fields.put("msisdn", msisdn); //agregamos el UserID al request
+            upstreamRequestLoggersubscribe(msisdn, fields, "reset");
+
+            //realizamos la llamada al WS
+            F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
+            WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
+            checkUpstreamResponseStatus(wsResponse,client, fields.toString());
+            ObjectNode fResponse = Json.newObject();
+            fResponse = (ObjectNode)wsResponse.asJson();
+            upstreamResponseLoggersubscribe(msisdn, wsResponse, fResponse, "reset");
+            if(fResponse != null){
+                int callResult = fResponse.findValue("result").asInt();
+                errorMessage = getUpstreamError(callResult) + " - unitResult:"+callResult;
+                if(callResult == 0){
+                    //everything is OK, do nothing but wait for MT
+                }else{
+                    //ocurrio un error en la llamada
+                    throw new UpstreamException(callResult, errorMessage, fields.toString());
+                }
+            }else{
+                errorMessage = "Web service call to UnitApp failed";
+                throw new UpstreamException(-1, errorMessage, fields.toString());
+            }
+        }else{
+            errorMessage = "No MSISDN for client";
+            throw new Exception(errorMessage);
+        }
+    }
+
     /**
      * Funcion que permite enviar un evento de la app a Upstream
      *
@@ -873,7 +952,7 @@ public class Upstream extends UpstreamController {
             }else{
                 if(wsStatus == 401){
                     //la combinacion login:password es incorrecta, borramos el password
-                    client.setPassword("");
+                    //client.setPassword("");
                     throw new UpstreamException(wsStatus, "Upstream service: "+ wsResponse.getUri() +" fails authentication", request);
                 }else{
                     throw new UpstreamException(wsStatus, "Upstream service: "+ wsResponse.getUri() +" fails with unknown status", request);
@@ -1006,6 +1085,23 @@ public class Upstream extends UpstreamController {
             System.out.println("\t" + entry.getKey() + " " + entry.getValue());
         }
         System.out.println("fields: " + fields + "\n-----------------------");
+    }
+
+
+    private static void EventKraken(Client client){
+
+        String ws = Config.getString("kraken-play-url").toString() + "/KrakenDaemon/v1/prediction";
+        ObjectNode event = Json.newObject();
+        event.put("source", "9090");
+        event.put("destination", client.getLogin());
+        event.put("id_business", 23);
+        event.put("id_carrier", 11);
+        event.put("id_country", 8);
+        event.put("external_id", client.getIdClient());
+        event.put("msg", "GANA");
+        event.put("origin", "PLUSSPORT");
+        F.Promise<WSResponse> result = WS.url(ws).post(event);
+        String json = result.get(10000).getBody();
     }
 
 }

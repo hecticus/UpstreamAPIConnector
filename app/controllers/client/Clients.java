@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import controllers.UpstreamController;
 import exceptions.UpstreamException;
 import models.Config;
+import models.basic.Country;
 import models.basic.Language;
 import models.clients.Client;
 import models.clients.ClientHasDevices;
@@ -12,9 +13,8 @@ import play.libs.Json;
 import play.mvc.Result;
 import utils.UpstreamCoreUtils;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * Created by plessmann on 05/06/15.
@@ -35,9 +35,6 @@ public class Clients extends UpstreamController {
                     return ok(buildBasicResponse(0, "OK", client.toJson()));
                 }
             }
-
-
-
             client = Client.create("upstream", clientData);
             return created(buildBasicResponse(0, "OK", client.toJson()));
         } catch (Exception ex) {
