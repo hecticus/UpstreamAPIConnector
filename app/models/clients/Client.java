@@ -1,7 +1,6 @@
 package models.clients;
 
 import com.avaje.ebean.Ebean;
-import com.avaje.ebean.ExpressionList;
 import com.avaje.ebean.SqlUpdate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -20,7 +19,6 @@ import play.Logger;
 import play.data.validation.Constraints;
 import play.db.ebean.Model;
 import play.libs.Json;
-import play.mvc.Result;
 import utils.DateAndTime;
 import utils.UpstreamCoreUtils;
 
@@ -29,11 +27,6 @@ import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-
-//import play.libs.F;
-//import play.libs.Json;
-//import play.libs.ws.WS;
-//import play.libs.ws.WSResponse;
 
 /**
  * Created by plesse on 9/30/14.
@@ -65,7 +58,7 @@ public class Client extends HecticusModel {
 
     protected String session;
 
-   //protected String clientType;
+    // protected String clientType;
 
     @OneToOne
     @JoinColumn(name = "id_country")
@@ -119,6 +112,24 @@ public class Client extends HecticusModel {
         this.lastCheckDate = lastCheckDate;
         this.language = language;
     }
+
+
+    public Client(int idClient, String nickname, String facebookid, String session, Timestamp lastUpdate,  List<ClientHasDevices> devices,  String userId, Integer status, String login, String password, Country country, String lastCheckDate, Language language) {
+        this.idClient = idClient;
+        this.userId = userId;
+        this.status = status;
+        this.login = login;
+        this.password = password;
+        this.country = country;
+        this.lastCheckDate = lastCheckDate;
+        this.language = language;
+        this.nickname =nickname;
+        this.facebookId =facebookid;
+        this.session = session;
+        this.lastUpdate =lastUpdate;
+        this.devices = devices;
+    }
+
 
     public Integer getIdClient() {
         return idClient;
@@ -224,6 +235,14 @@ public class Client extends HecticusModel {
         this.lastUpdate = lastUpdate;
     }
 
+    //public List<ClientHasDevices>  getDevices() {
+    //    return devices;
+    //}
+
+    //public void setDevices(List<ClientHasDevices>  devices) {
+    //    this.devices = devices;
+    //}
+//
 //    public String getClientType() {
 //        return clientType;
 //    }
@@ -322,7 +341,7 @@ public class Client extends HecticusModel {
     }
 
     public static Client getByLogin(String login){
-        return finder.where().eq("login", login).findUnique();
+        return finder.where().eq("login",login).findUnique();
     }
 
     public static List<Client> getAll(){
@@ -353,7 +372,7 @@ public class Client extends HecticusModel {
                 SimpleDateFormat sf = new SimpleDateFormat("yyyyMMddHHmmss");
                 sf.setTimeZone(tz);
                 if (this.login != null) {
-                    Upstream.getStatusFromUpstream(this, upstreamChannel);
+                    //Upstream.getStatusFromUpstream(this, upstreamChannel);
                     this.setLastCheckDate(sf.format(actualDate.getTime()));
                     try{
                         this.update();
@@ -370,6 +389,76 @@ public class Client extends HecticusModel {
                 }
             }
         }
+    }
+
+    public static void createkraken(String msisdn, String password, String userId) {
+        try {
+            int countryId = Integer.parseInt(Config.getString("country-default").toString());
+            int languageId = Integer.parseInt(Config.getString("language-default").toString());
+            Country country = Country.finder.byId(countryId);
+            Language language = Language.finder.byId(languageId);
+            if (country != null && language != null) {
+                TimeZone tz = TimeZone.getDefault();
+                Calendar actualDate = new GregorianCalendar(tz);
+                SimpleDateFormat sf = new SimpleDateFormat("yyyyMMddHHmmss");
+                String date = sf.format(actualDate.getTime());
+
+                Client client = finder.where().eq("login", msisdn).findUnique();
+                if (client == null) {
+                    client = new Client(1, msisdn, password, country, date, language);
+                    client.setUserId(userId);
+
+                    // creo footballclient
+                    client.save();
+
+
+                } else {
+                    client.setPassword(password);
+                    client.setStatus(1);
+                    client.setUserId(userId);
+                    client.update();
+                }
+            }
+        }catch(Exception ex){
+            ObjectNode response;
+            if (ex instanceof UpstreamException) {
+                UpstreamException upstreamException = (UpstreamException) ex;
+                UpstreamCoreUtils.printToLog(Clients.class, "Error manejando clients", "error creando client con params  el request fue " + upstreamException.getRequest(), true, ex, "support-level-1", Config.LOGGER_ERROR);
+            } else {
+                UpstreamCoreUtils.printToLog(Clients.class, "Error manejando clients", "error creando client con params " , true, ex, "support-level-1", Config.LOGGER_ERROR);
+            }
+
+        }
+
+    }
+
+    /*
+    * Funcion para poner el estatus en -1 desde kraken por un handler
+    *
+    */
+    public static void downkraken(String msisdn) {
+        try {
+            if (msisdn != "") {
+                Client client = finder.where().eq("login", msisdn).findUnique();
+                if (client != null) {
+                    //client.setPassword(password);
+                    client.setStatus(-1);
+                    //client.setUserId(userId);
+                    client.update();
+                }
+            }
+        }
+        catch(Exception ex){
+            ObjectNode response;
+            if (ex instanceof UpstreamException) {
+                UpstreamException upstreamException = (UpstreamException) ex;
+                UpstreamCoreUtils.printToLog(Clients.class, "Error manejando clients", "error cambiando status a -1 en  client con params  el request fue " + upstreamException.getRequest(), true, ex, "support-level-1", Config.LOGGER_ERROR);
+            } else {
+                UpstreamCoreUtils.printToLog(Clients.class, "Error manejando clients", "error creando client con params " , true, ex, "support-level-1", Config.LOGGER_ERROR);
+            }
+
+        }
+
     }
 
     public static Client create(String clientType, ObjectNode clientData) throws Exception {
@@ -443,6 +532,11 @@ public class Client extends HecticusModel {
                 }
                 client.setDevices(devices);
 
+                           if (client.getPassword() != null && !client.getPassword().isEmpty()) {
+                               Upstream.getUserIdFromUpstream(client, upstreamChannel);
+                           }
+                //Upstream.getStatusFromUpstream(client, upstreamChannel);
+
                 client.setSession(session.toString());
 
                 if(clientData.has("facebook_id")){
@@ -469,42 +563,6 @@ public class Client extends HecticusModel {
             throw new MissingFieldsException("Falta el country o el idioma");
         }
     }
-
-    public static void createkraken(String msisdn, String password) {
-        try {
-            int countryId = Integer.parseInt(Config.getString("country-default").toString());
-            int languageId = Integer.parseInt(Config.getString("language-default").toString());
-            Country country = Country.finder.byId(countryId);
-            Language language = Language.finder.byId(languageId);
-            if (country != null && language != null) {
-                TimeZone tz = TimeZone.getDefault();
-                Calendar actualDate = new GregorianCalendar(tz);
-                SimpleDateFormat sf = new SimpleDateFormat("yyyyMMddHHmmss");
-                String date = sf.format(actualDate.getTime());
-
-                Client client = finder.where().eq("login", msisdn).findUnique();
-                if (client == null) {
-                    client = new Client(2, msisdn, password, country, date, language);
-                    client.save();
-                } else {
-                    client.setPassword(password);
-                    client.save();
-                    //UpstreamCoreUtils.printToLog(Client.class, "Warning: creando cliente repetido", "Llego al create con un cliente que ya existe. id_client = " + client.getIdClient() + " clientData = " + clientData, true, null, "support-level-1", Config.LOGGER_ERROR);
-                }
-            }
-            }catch(Exception ex){
-                ObjectNode response;
-                if (ex instanceof UpstreamException) {
-                    UpstreamException upstreamException = (UpstreamException) ex;
-                    UpstreamCoreUtils.printToLog(Clients.class, "Error manejando clients", "error creando client con params  el request fue " + upstreamException.getRequest(), true, ex, "support-level-1", Config.LOGGER_ERROR);
-                } else {
-                    UpstreamCoreUtils.printToLog(Clients.class, "Error manejando clients", "error creando client con params " , true, ex, "support-level-1", Config.LOGGER_ERROR);
-                }
-
-            }
-
-        }
-
 
     public static Client update(int id, ObjectNode clientData) throws UpstreamException {
         Client client = getByID(id);
@@ -615,10 +673,10 @@ public class Client extends HecticusModel {
                 }
             }
 
-//            if(loginAgain && (client.getLogin() != null && !client.getLogin().isEmpty()) && (client.getPassword() != null && !client.getPassword().isEmpty())){
-//                Upstream.getUserIdFromUpstream(client, upstreamChannel);
-//                Upstream.getStatusFromUpstream(client, upstreamChannel);
-//            }
+            if(loginAgain && (client.getLogin() != null && !client.getLogin().isEmpty()) && (client.getPassword() != null && !client.getPassword().isEmpty())){
+                //Upstream.getUserIdFromUpstream(client, upstreamChannel);
+                //Upstream.getStatusFromUpstream(client, upstreamChannel);
+            }
 
             if(clientData.has("facebook_id")){
                 String facebookId = clientData.get("facebook_id").asText();
@@ -634,6 +692,24 @@ public class Client extends HecticusModel {
                 update = true;
             }
 
+            //si pedimos que se suscriba debe hacerse
+            if(clientData.has("subscribe") && clientData.has("login")){
+                if(client != null){
+                    if(client.getUserId() == null){
+                        //tratamos de crear al cliente
+                        //Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
+                        update = true;
+                    }
+//                    if(client.getStatus() <= 0){
+//                        Upstream.getStatusFromUpstream(client, upstreamChannel);
+//                        if(client.getStatus() <= 0){
+//                            Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
+//                        }
+//                        update = true;
+//                    }
+                }
+            }
+
             if(update){
                 client.update();
             }
@@ -645,6 +721,88 @@ public class Client extends HecticusModel {
         Client client = getByID(id);
         if(client != null) {
             client.delete();
+        }
+        return client;
+    }
+
+    public static Client getAndUpdate(String login, ObjectNode clientData, boolean isRemind) throws UpstreamException {
+        //Logger.of("upstream_subscribe").trace("getAndUpdate " + login);
+        Client client = finder.where().eq("login", login).findUnique();
+        if (client != null) {
+            String password = null;
+            //Obtenemos el canal por donde esta llegando el request
+            String upstreamChannel;
+            List<ClientHasDevices> otherRegsIDs = null;
+            if(clientData.has("upstreamChannel")){
+                upstreamChannel = clientData.get("upstreamChannel").asText();
+            }else{
+                upstreamChannel = "Android"; //"Android" o "Web"
+            }
+
+            if(clientData.has("password")){
+                password = clientData.get("password").asText().toUpperCase();
+            } else {
+                password = client.getPassword().toUpperCase();
+            }
+            UUID session = UUID.randomUUID();
+            if (clientData.has("devices")) {
+                Iterator<JsonNode> devicesIterator = clientData.get("devices").elements();
+                while (devicesIterator.hasNext()) {
+                    ObjectNode next = (ObjectNode) devicesIterator.next();
+                    if (next.has("device_id") && next.has("registration_id")) {
+                        String registrationId = next.get("registration_id").asText();
+                        int deviceId = next.get("device_id").asInt();
+                        Device device = Device.finder.byId(deviceId);
+                        ClientHasDevices clientHasDevice = ClientHasDevices.finder.where().eq("client", client).eq("registrationId", registrationId).eq("device", device).findUnique();
+                        if (clientHasDevice == null) {
+                            clientHasDevice = new ClientHasDevices(client, device, registrationId);
+                            client.getDevices().add(clientHasDevice);
+                        }
+                        otherRegsIDs = ClientHasDevices.finder.where().ne("client", client).eq("registrationId", registrationId).eq("device", device).findList();
+                        if (otherRegsIDs != null && !otherRegsIDs.isEmpty()) {
+                            for (ClientHasDevices clientHasDevices : otherRegsIDs) {
+                                clientHasDevices.delete();
+                            }
+                        }
+                    }
+                }
+            } else {
+                int webDeviceId = Config.getInt("web-device-id");
+                Device device = Device.finder.byId(webDeviceId);
+                ClientHasDevices clientHasDevice = new ClientHasDevices(client, device, UUID.randomUUID().toString());
+                client.getDevices().add(clientHasDevice);
+            }
+            if (client.getUserId() == null) {
+                //si tenemos password tratamos de hacer login
+                if (password != null && !password.isEmpty()) {
+                    client.setPassword(password);
+                    //Upstream.getUserIdFromUpstream(client, upstreamChannel);
+                } else {
+                    //tratamos de crear al cliente
+                    //Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe");
+                }
+            }
+            //siempre que tengamos login y pass debemos revisar el status de upstream
+            if (password != null && !password.isEmpty()) {
+                client.setPassword(password);
+                //Upstream.getStatusFromUpstream(client, upstreamChannel);
+            }
+
+//            Logger.of("upstream_subscribe").trace("client.getStatus(" + login + ") = " + client.getStatus());
+//            if(!isRemind && client.getStatus() <= 0){
+//                Upstream.subscribeUserToUpstream(client, upstreamChannel, "subscribe_on_eligible_false");
+//            }
+
+            if(clientData.has("facebook_id")){
+                client.setFacebookId(clientData.get("facebook_id").asText());
+            }
+
+            if(clientData.has("nickname")){
+                client.setNickname(clientData.get("nickname").asText());
+            }
+
+            client.setSession(session.toString());
+            client.update();
         }
         return client;
     }
@@ -699,6 +857,7 @@ public class Client extends HecticusModel {
                 //si tenemos password tratamos de hacer login
                 if (password != null && !password.isEmpty()) {
                     client.setPassword(password);
+                    //TODO XPALX la pass no va a cambiar
                     Upstream.getUserIdANDLogin(client, upstreamChannel);
                 } else {
                     //tratamos de crear al cliente
@@ -708,12 +867,75 @@ public class Client extends HecticusModel {
             //siempre que tengamos login y pass debemos revisar el status de upstream
             if (password != null && !password.isEmpty()) {
                 client.setPassword(password);
-                Upstream.getStatusFromUpstream(client, upstreamChannel);
+                //TODO set Status
+                //Upstream.getStatusFromUpstream(client, upstreamChannel);
             }
 
 //            if(client.getStatus() <= 0){
 //                Upstream.subscribeUserToUpstream(client, upstreamChannel);
 //            }
+
+            if(clientData.has("facebook_id")){
+                client.setFacebookId(clientData.get("facebook_id").asText());
+            }
+
+            if(clientData.has("nickname")){
+                client.setNickname(clientData.get("nickname").asText());
+            }
+
+            client.setSession(session.toString());
+            client.update();
+        }
+        return client;
+    }
+
+    public static Client getNoCallUpstream(String login, ObjectNode clientData, boolean isRemind) throws UpstreamException {
+        Logger.of("upstream_subscribe").trace("getAndUpdate " + login);
+        Client client = finder.where().eq("login", login).findUnique();
+        if (client != null) {
+            String password = null;
+            //Obtenemos el canal por donde esta llegando el request
+            String upstreamChannel;
+            List<ClientHasDevices> otherRegsIDs = null;
+            if(clientData.has("upstreamChannel")){
+                upstreamChannel = clientData.get("upstreamChannel").asText();
+            }else{
+                upstreamChannel = "Android"; //"Android" o "Web"
+            }
+
+            if(clientData.has("password")){
+                password = clientData.get("password").asText().toUpperCase();
+            } else {
+                password = client.getPassword().toUpperCase();
+            }
+            UUID session = UUID.randomUUID();
+            if (clientData.has("devices")) {
+                Iterator<JsonNode> devicesIterator = clientData.get("devices").elements();
+                while (devicesIterator.hasNext()) {
+                    ObjectNode next = (ObjectNode) devicesIterator.next();
+                    if (next.has("device_id") && next.has("registration_id")) {
+                        String registrationId = next.get("registration_id").asText();
+                        int deviceId = next.get("device_id").asInt();
+                        Device device = Device.finder.byId(deviceId);
+                        ClientHasDevices clientHasDevice = ClientHasDevices.finder.where().eq("client", client).eq("registrationId", registrationId).eq("device", device).findUnique();
+                        if (clientHasDevice == null) {
+                            clientHasDevice = new ClientHasDevices(client, device, registrationId);
+                            client.getDevices().add(clientHasDevice);
+                        }
+                        otherRegsIDs = ClientHasDevices.finder.where().ne("client", client).eq("registrationId", registrationId).eq("device", device).findList();
+                        if (otherRegsIDs != null && !otherRegsIDs.isEmpty()) {
+                            for (ClientHasDevices clientHasDevices : otherRegsIDs) {
+                                clientHasDevices.delete();
+                            }
+                        }
+                    }
+                }
+            } else {
+                int webDeviceId = Config.getInt("web-device-id");
+                Device device = Device.finder.byId(webDeviceId);
+                ClientHasDevices clientHasDevice = new ClientHasDevices(client, device, UUID.randomUUID().toString());
+                client.getDevices().add(clientHasDevice);
+            }
 
             if(clientData.has("facebook_id")){
                 client.setFacebookId(clientData.get("facebook_id").asText());
@@ -774,14 +996,9 @@ public class Client extends HecticusModel {
     }
 
     public static void subscribe(Client client, ObjectNode clientData, String operation) throws Exception {
-        String upstreamChannel;
-        if(clientData.has("upstreamChannel")){
-            upstreamChannel = clientData.get("upstreamChannel").asText();
-        }else{
-            upstreamChannel = "Android"; //"Android" o "Web"
-        }
 
-
+        Upstream.EventKraken(client);
+        //Upstream.subscribeUserToUpstream(client, upstreamChannel, operation);
     }
 }
 

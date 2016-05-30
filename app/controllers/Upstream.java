@@ -1,7 +1,6 @@
 package controllers;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import exceptions.UpstreamException;
 import models.Config;
 import models.clients.Client;
@@ -56,7 +55,7 @@ public class Upstream extends UpstreamController {
                 client = Client.getByLogin(msisdn);
             }
             if(client != null) {
-                resetPasswordForUpstream(client,upstreamChannel);
+                //resetPasswordForUpstream(client,upstreamChannel);  ///TODO clean mode llamar al reset nuestro
                 client.setPassword("");
                 client.update();
                 response = buildBasicResponse(0, "OK", client.toJson());
@@ -118,35 +117,13 @@ public class Upstream extends UpstreamController {
         String event_type = null;
         try{
             ObjectNode clientData = getJson();
+            //Logger.of("upstream_subscribe").trace("sendClientEvent -> app_request: " + clientData);
             if(clientData == null){
                 return badRequest(buildBasicResponse(1, "Falta el json con los parametros del request"));
             }
             Client client = Client.getByID(id);
             if(client != null) {
-                user_id = client.getUserId();
-                ObjectNode metadata = null;
-                //Obtenemos el canal por donde esta llegando el request
-                String upstreamChannel;
-                if (clientData.has("upstreamChannel")) {
-                    upstreamChannel = clientData.get("upstreamChannel").asText();
-                } else {
-                    upstreamChannel = "Android"; //"Android" o "Web"
-                }
-                //buscamos el event_type
-                if (clientData.has("event_type")) {
-                    event_type = clientData.get("event_type").asText();
-                }
-
-                if (clientData.has("metadata")) {
-                    metadata = (ObjectNode) clientData.get("metadata");
-                }
-
-                if (event_type != null || !event_type.isEmpty()) {
-                    sendEventForUpstream(client, upstreamChannel, event_type, metadata);
-                    return ok(buildBasicResponse(0, "OK", client.toJson()));
-                } else {
-                    return badRequest(buildBasicResponse(3, "Falta el tipo de evento"));
-                }
+                return ok(buildBasicResponse(0, "OK", client.toJson()));
             } else {
                 return notFound(buildBasicResponse(2, "no existe el cliente " + id));
             }
@@ -219,60 +196,36 @@ public class Upstream extends UpstreamController {
             }
             client.setStatus(2);
         } else {
+
             String msisdn = client.getLogin();
             String password = client.getPassword();
             String push_notification_id = null;
 
-            push_notification_id = getPushNotificationID(client, upstreamChannel);
+            //push_notification_id = getPushNotificationID(client, upstreamChannel);
 
-            //Data from configs
-            String upstreamURL = Config.getString("upstreamURL");
-            String url = upstreamURL+UPSTREAM_SUBSCRIBE_URL;
-
-            WSRequestHolder urlCall = setUpstreamRequest(url, msisdn, password);
-
-            //llenamos el JSON a enviar
-            ObjectNode fields = getBasicUpstreamPOSTRequestJSON(upstreamChannel, push_notification_id, null, client.getSession());
-            //agregamos el msisdn(username) y el password
-            fields.put("password", password);
-            fields.put("msisdn", msisdn);
-            fields.put("username", msisdn);
-
-            //audit log for points
-            upstreamRequestLoggersubscribe(msisdn, fields, operation);
-
-
-            //realizamos la llamada al WS
-            F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
-            WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
-
-            //audit log for responses
-            checkUpstreamResponseStatus(wsResponse,client, fields.toString());
-            ObjectNode fResponse = Json.newObject();
-            fResponse = (ObjectNode)wsResponse.asJson();
             String errorMessage="";
-            upstreamResponseLoggersubscribe(msisdn, wsResponse, fResponse, "subscribe");
-            if(fResponse != null){
-                int callResult = fResponse.findValue("result").asInt();
-                errorMessage = getUpstreamError(callResult) + " - upstreamResult:"+callResult;
-                //TODO: revisar si todos estos casos devuelven con exito la llamada o algunos si se consideran errores
-                if(callResult == 0 || callResult == 1 || callResult == 0 || callResult == 6){
-                    //Se trajo la informacion con exito
-                    String userID = fResponse.findValue(upstreamUserIDSubscriptionResponseTag).asText();
-                    //TODO: guardar el userID en la info del cliente
-                    client.setUserId(userID);
-                }else{
-                    //ocurrio un error en la llamada
-                    throw new UpstreamException(callResult, errorMessage, fields.toString());
-                }
-            }else{
-                errorMessage = "Web service call to Upstream failed";
-                throw new UpstreamException(-1, errorMessage, fields.toString());
-            }
-
             //client.setStatus(1);//no lo debemos colocar en status 1 hasta que no obtengamos el status del cliente
         }
     }
+
+
+    public static void getUserIdANDLogin(Client client, String upstreamChannel) throws UpstreamException{
+
+        if(client.getLogin() != null){
+            String errorMessage="";
+            Client clientTemp = Client.getByLogin(client.getLogin().toString());
+            if(clientTemp.getIdClient() != null){
+                client.setUserId(clientTemp.getUserId());
+            }else{
+                errorMessage = "Problema Realizando Loguin User -- Usuario no Registrado";
+                throw new UpstreamException(-1, errorMessage);
+            }
+
+        }else{
+            client.setStatus(2);
+        }
+    }
+
 
     /**
      * Funcion que permite desuscribir al usuario en Upstream dado su user_id de upstream
@@ -327,35 +280,35 @@ public class Upstream extends UpstreamController {
             String upstreamURL = Config.getString("upstreamURL");
             String url = upstreamURL + UPSTREAM_SUBSCRIBE_URL;
 
-            WSRequestHolder urlCall = setUpstreamRequest(url, login, password);
+            //WSRequestHolder urlCall = setUpstreamRequest(url, login, password);
 
             //llenamos el JSON a enviar
-            ObjectNode fields = getBasicUpstreamPOSTRequestJSON(upstreamChannel, push_notification_id, null, client.getSession());
+            //ObjectNode fields = getBasicUpstreamPOSTRequestJSON(upstreamChannel, push_notification_id, null, client.getSession());
             //agregamos el user_id
-            fields.put("user_id", userID);
+            //fields.put("user_id", userID);
 
             //realizamos la llamada al WS
-            F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
-            WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
-            checkUpstreamResponseStatus(wsResponse,client, fields.toString());
-            ObjectNode fResponse = Json.newObject();
-            fResponse = (ObjectNode)wsResponse.asJson();
-            if(fResponse != null){
-                int callResult = fResponse.findValue("result").asInt();
-                errorMessage = getUpstreamError(callResult) + " - upstreamResult:"+callResult;
-                if(callResult == 0){
-                    //TODO: Que se debe hacer en el caso que la desuscripcion sea exitosa, borrar al cliente, ponerlo en status 2 para que con la fecha se actualice?
-                    client.setStatus(0);
-                    client.setUserId("");
-                    client.setPassword("");
-                }else{
-                    //ocurrio un error en la llamada
-                    throw new UpstreamException(callResult, errorMessage, fields.toString());
-                }
-            }else{
-                errorMessage = "Web service call to Upstream failed";
-                throw new UpstreamException(-1, errorMessage, fields.toString());
-            }
+            //F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
+            //WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
+            //checkUpstreamResponseStatus(wsResponse,client, fields.toString());
+            //ObjectNode fResponse = Json.newObject();
+            //fResponse = (ObjectNode)wsResponse.asJson();
+//            if(fResponse != null){
+//                int callResult = fResponse.findValue("result").asInt();
+//                errorMessage = getUpstreamError(callResult) + " - upstreamResult:"+callResult;
+//                if(callResult == 0){
+//                    //TODO: Que se debe hacer en el caso que la desuscripcion sea exitosa, borrar al cliente, ponerlo en status 2 para que con la fecha se actualice?
+//                    client.setStatus(0);
+//                    client.setUserId("");
+//                    client.setPassword("");
+//                }else{
+//                    //ocurrio un error en la llamada
+//                    throw new UpstreamException(callResult, errorMessage, fields.toString());
+//                }
+//            }else{
+//                errorMessage = "Web service call to Upstream failed";
+//                throw new UpstreamException(-1, errorMessage, fields.toString());
+//            }
         }
     }
 
@@ -398,83 +351,67 @@ public class Upstream extends UpstreamController {
      *
      */
     public static void getUserIdFromUpstream(Client client, String upstreamChannel) throws UpstreamException{
-        String upstreamGuestUser = Config.getString("upstreamGuestUser");
-        if(client.getLogin() == null || client.getLogin().equalsIgnoreCase(upstreamGuestUser)){
-            if(client.getLogin() == null){
-                client.setLogin(upstreamGuestUser);
-            }
-            if(client.getPassword() == null){
-                client.setPassword(Config.getString("upstreamGuestPassword"));
-            }
-            if(client.getUserId() == null){
-                client.setUserId(Config.getString("upstreamUserID"));
-            }
-            client.setStatus(2);
-        } else{
-            String username = client.getLogin();
-            String password = client.getPassword();
-            String push_notification_id = getPushNotificationID(client, upstreamChannel);
-
-            //Data from configs
-            String upstreamURL = Config.getString("upstreamURL");
-            String url = upstreamURL + UPSTREAM_LOGIN_URL;
-
-            WSRequestHolder urlCall = setUpstreamRequest(url, username, password);
-
-            //llenamos el JSON a enviar
-            ObjectNode fields = getBasicUpstreamPOSTRequestJSON(upstreamChannel, push_notification_id, null, client.getSession());
-            //agregamos el username y el password
-            fields.put("password", password);
-            fields.put("username", username);
-            fields.put("msisdn", username);
-             // printRequest(urlCall, fields);
-            //  realizamos la llamada al WS
-            F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
-            WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
-
-            String upstreamGuestUserId = Config.getString("upstreamUserID");
-            if(client.getUserId() != null && client.getUserId().equalsIgnoreCase(upstreamGuestUserId)){
-                return;
-            }
-
-            checkUpstreamResponseStatus(wsResponse,client, fields.toString());
-            ObjectNode fResponse = Json.newObject();
-            fResponse = (ObjectNode)wsResponse.asJson();
-            String errorMessage="";
-            if(fResponse != null){
-                int callResult = fResponse.findValue("result").asInt();
-                errorMessage = getUpstreamError(callResult) + " - upstreamResult:"+callResult;
-                if(callResult == 0 || callResult == 6){
-                    //Se trajo la informacion con exito
-                    String userID = fResponse.findValue("user_id").asText();
-                    //TODO: guardar el userID en la info del cliente
-                    client.setUserId(userID);
-                }else{
-                    //ocurrio un error en la llamada
-                    throw new UpstreamException(callResult, errorMessage, fields.toString());
-                }
-            }else{
-                errorMessage = "Web service call to Upstream failed";
-                throw new UpstreamException(-1, errorMessage, fields.toString());
-            }
-        }
-    }
-
-    public static void getUserIdANDLogin(Client client, String upstreamChannel) throws UpstreamException{
-
-        if(client.getLogin() != null){
-            String errorMessage="";
-            Client clientTemp = Client.getByLogin(client.getLogin().toString());
-            if(clientTemp.getIdClient() != null){
-               client.setUserId(clientTemp.getUserId());
-            }else{
-                errorMessage = "Problema Realizando Loguin User -- Usuario no Registrado";
-                throw new UpstreamException(-1, errorMessage);
-            }
-
-        }else{
-            client.setStatus(2);
-        }
+//        String upstreamGuestUser = Config.getString("upstreamGuestUser");
+//        if(client.getLogin() == null || client.getLogin().equalsIgnoreCase(upstreamGuestUser)){
+//            if(client.getLogin() == null){
+//                client.setLogin(upstreamGuestUser);
+//            }
+//            if(client.getPassword() == null){
+//                client.setPassword(Config.getString("upstreamGuestPassword"));
+//            }
+//            if(client.getUserId() == null){
+//                client.setUserId(Config.getString("upstreamUserID"));
+//            }
+//            client.setStatus(2);
+//        } else {
+//            String username = client.getLogin();
+//            String password = client.getPassword();
+//            String push_notification_id = getPushNotificationID(client, upstreamChannel);
+//            //Data from configs
+//            String upstreamURL = Config.getString("upstreamURL");
+//            String url = upstreamURL + UPSTREAM_LOGIN_URL;
+//
+//            WSRequestHolder urlCall = setUpstreamRequest(url, username, password);
+//
+//            //llenamos el JSON a enviar
+//            ObjectNode fields = getBasicUpstreamPOSTRequestJSON(upstreamChannel, push_notification_id, null, client.getSession());
+//            //agregamos el username y el password
+//            fields.put("password", password);
+//            fields.put("username", username);
+//            fields.put("msisdn", username);
+//            printRequest(urlCall, fields);
+//            upstreamRequestLoggersubscribe(username, fields, "get_id", url);
+//            //realizamos la llamada al WS
+//            F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
+//            WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
+//
+//            String upstreamGuestUserId = Config.getString("upstreamUserID");
+//            if(client.getUserId() != null && client.getUserId().equalsIgnoreCase(upstreamGuestUserId)){
+//                return;
+//            }
+//
+//            checkUpstreamResponseStatus(wsResponse,client, fields.toString());
+//            ObjectNode fResponse = Json.newObject();
+//            fResponse = (ObjectNode)wsResponse.asJson();
+//            upstreamResponseLoggersubscribe(username, wsResponse, fResponse, "get_id");
+//            String errorMessage="";
+//            if(fResponse != null){
+//                int callResult = fResponse.findValue("result").asInt();
+//                errorMessage = getUpstreamError(callResult) + " - upstreamResult:"+callResult;
+//                if(callResult == 0 || callResult == 6){
+//                    //Se trajo la informacion con exito
+//                    String userID = fResponse.findValue("user_id").asText();
+//                    //TODO: guardar el userID en la info del cliente
+//                    client.setUserId(userID);
+//                }else{
+//                    //ocurrio un error en la llamada
+//                    throw new UpstreamException(callResult, errorMessage, fields.toString());
+//                }
+//            }else{
+//                errorMessage = "Web service call to Upstream failed";
+//                throw new UpstreamException(-1, errorMessage, fields.toString());
+//            }
+//        }
     }
 
     /**
@@ -518,60 +455,61 @@ public class Upstream extends UpstreamController {
      *
      */
     public static void getStatusFromUpstream(Client client, String upstreamChannel) throws UpstreamException{
-        String upstreamGuestUser = Config.getString("upstreamGuestUser");
-        if(client.getLogin() != null && client.getUserId() != null && client.getPassword() != null && !client.getLogin().equalsIgnoreCase(upstreamGuestUser)){
-            String username = client.getLogin();
-            String userID = client.getUserId();
-            String password = client.getPassword();
-            String push_notification_id = getPushNotificationID(client, upstreamChannel);
-
-            //Data from configs
-            String upstreamURL = Config.getString("upstreamURL");
-            String url = upstreamURL + UPSTREAM_STATUS_URL;
-
-            //Hacemos la llamada con los headers de autenticacion
-            WSRequestHolder urlCall = setUpstreamRequest(url, username, password);
-
-            //llenamos el JSON a enviar
-            ObjectNode fields = getBasicUpstreamPOSTRequestJSON(upstreamChannel, push_notification_id, null, client.getSession());
-            fields.put("user_id", userID); //agregamos el UserID al request
-
-            upstreamRequestLoggersubscribe(username, fields, "status");
-
-            //realizamos la llamada al WS
-            F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
-            WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
-
-            String upstreamGuestUserId = Config.getString("upstreamUserID");
-            if(client.getUserId() != null && client.getUserId().equalsIgnoreCase(upstreamGuestUserId)){
-                return;
-            }
-
-            checkUpstreamResponseStatus(wsResponse,client, fields.toString());
-            ObjectNode fResponse = Json.newObject();
-            fResponse = (ObjectNode)wsResponse.asJson();
-            String errorMessage = "";
-            upstreamResponseLoggersubscribe(username, wsResponse, fResponse, "status");
-            if(fResponse != null){
-                int callResult = fResponse.findValue("result").asInt();
-                errorMessage = getUpstreamError(callResult) + " - upstreamResult:"+callResult;
-                if(callResult == 0 || callResult == 4){
-                    //Se trajo la informacion con exito
-                    Boolean eligible = fResponse.findValue("eligible").asBoolean();
-                    //TODO: guardar en el userID la info de si esta activo o no
-                    client.setStatus(eligible ? 1 : -1);
-                }else{
-                    //ocurrio un error en la llamada
-                    throw new UpstreamException(callResult, errorMessage, fields.toString());
-                }
-            }else{
-                errorMessage = "Web service call to Upstream failed";
-                throw new UpstreamException(-1, errorMessage, fields.toString());
-            }
-        }else{
-            //deberia estar en periodo de pruebas 2 o desactivado por tiempo -1 la verificacion se hace despues de la llamada
-            client.setStatus(2);
-        }
+//        String upstreamGuestUser = Config.getString("upstreamGuestUser");
+//        if(client.getLogin() != null && client.getUserId() != null && client.getPassword() != null && !client.getLogin().equalsIgnoreCase(upstreamGuestUser)){
+//            String username = client.getLogin();
+//            String userID = client.getUserId();
+//            String password = client.getPassword();
+//            String push_notification_id = getPushNotificationID(client, upstreamChannel);
+//
+//            //Data from configs
+//            String upstreamURL = Config.getString("upstreamURL");
+//            String url = upstreamURL + UPSTREAM_STATUS_URL;
+//
+//            //Hacemos la llamada con los headers de autenticacion
+//            WSRequestHolder urlCall = setUpstreamRequest(url, username, password);
+//
+//            //llenamos el JSON a enviar
+//            ObjectNode fields = getBasicUpstreamPOSTRequestJSON(upstreamChannel, push_notification_id, null, client.getSession());
+//            fields.put("user_id", userID); //agregamos el UserID al request
+//
+//            printRequest(urlCall, fields);
+//            upstreamRequestLoggersubscribe(username, fields, "status", url);
+//
+//            //realizamos la llamada al WS
+//            F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
+//            WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
+//
+//            String upstreamGuestUserId = Config.getString("upstreamUserID");
+//            if(client.getUserId() != null && client.getUserId().equalsIgnoreCase(upstreamGuestUserId)){
+//                return;
+//            }
+//
+//            checkUpstreamResponseStatus(wsResponse,client, fields.toString());
+//            ObjectNode fResponse = Json.newObject();
+//            fResponse = (ObjectNode)wsResponse.asJson();
+//            String errorMessage = "";
+//            upstreamResponseLoggersubscribe(username, wsResponse, fResponse, "status");
+//            if(fResponse != null){
+//                int callResult = fResponse.findValue("result").asInt();
+//                errorMessage = getUpstreamError(callResult) + " - upstreamResult:"+callResult;
+//                if(callResult == 0 || callResult == 4){
+//                    //Se trajo la informacion con exito
+//                    Boolean eligible = fResponse.findValue("eligible").asBoolean();
+//                    //TODO: guardar en el userID la info de si esta activo o no
+//                    client.setStatus(eligible ? 1 : -1);
+//                }else{
+//                    //ocurrio un error en la llamada
+//                    throw new UpstreamException(callResult, errorMessage, fields.toString());
+//                }
+//            }else{
+//                errorMessage = "Web service call to Upstream failed";
+//                throw new UpstreamException(-1, errorMessage, fields.toString());
+//            }
+//        }else{
+//            //deberia estar en periodo de pruebas 2 o desactivado por tiempo -1 la verificacion se hace despues de la llamada
+//            client.setStatus(2);
+//        }
     }
 
     /**
@@ -609,128 +547,50 @@ public class Upstream extends UpstreamController {
      *
      */
     public static void resetPasswordForUpstream(Client client, String upstreamChannel) throws Exception{
-        String errorMessage = "";
-        if(client.getLogin() != null){
-            String msisdn = client.getLogin();
-            String userID = null;
-            String password = null;
-            String push_notification_id = getPushNotificationID(client, upstreamChannel);
-
-            //Data from configs
-            String upstreamURL = Config.getString("upstreamURL");
-            String url = upstreamURL + UPSTREAM_PASSWORD_URL;
-
-            //Hacemos la llamada con los headers de autenticacion
-            WSRequestHolder urlCall = setUpstreamRequest(url, msisdn, password);
-
-            //llenamos el JSON a enviar
-            ObjectNode fields = getBasicUpstreamPOSTRequestJSON(upstreamChannel, push_notification_id, null, client.getSession());
-            fields.put("msisdn", msisdn); //agregamos el UserID al request
-
-            upstreamRequestLoggersubscribe(msisdn, fields, "reset");
-
-            //realizamos la llamada al WS
-            F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
-            WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
-            checkUpstreamResponseStatus(wsResponse,client, fields.toString());
-            ObjectNode fResponse = Json.newObject();
-            fResponse = (ObjectNode)wsResponse.asJson();
-            upstreamResponseLoggersubscribe(msisdn, wsResponse, fResponse, "reset");
-            if(fResponse != null){
-                int callResult = fResponse.findValue("result").asInt();
-                errorMessage = getUpstreamError(callResult) + " - upstreamResult:"+callResult;
-                if(callResult == 0){
-                    //everything is OK, do nothing but wait for MT
-                }else{
-                    //ocurrio un error en la llamada
-                    throw new UpstreamException(callResult, errorMessage, fields.toString());
-                }
-            }else{
-                errorMessage = "Web service call to Upstream failed";
-                throw new UpstreamException(-1, errorMessage, fields.toString());
-            }
-        }else{
-            errorMessage = "No MSISDN for client";
-            throw new Exception(errorMessage);
-        }
-    }
-
-    public static Result SendUnitPass() throws Exception{
-        String msisdn = "";
-        try{
-            ObjectNode response = null;
-            ObjectNode clientData = getJson();
-            Client client = null;
-            //Obtenemos el canal por donde esta llegando el request
-            String unitChannel;
-            if(clientData.has("unitChannel")){
-                unitChannel = clientData.get("unitChannel").asText();
-            }else{
-                unitChannel = "Android"; //"Android" o "Web"
-            }
-            //buscamos el msisdn
-            if(clientData.has("msisdn")){
-                msisdn = clientData.get("msisdn").asText();
-                client = Client.getByLogin(msisdn);
-            }
-            if(client != null) {
-                MtPasswordForUnit(client,unitChannel);
-
-                response = buildBasicResponse(0, "OK", client.toJson());
-            } else {
-                response = buildBasicResponse(2, "no existe el registro para hacer Recuperar del pass");
-            }
-            return ok(response);
-        } catch (Exception ex) {
-           UpstreamCoreUtils.printToLog(Upstream.class, "Error manejando clients", "error recuperando el password de unit del client " + msisdn, true, ex, "support-level-1", Config.LOGGER_ERROR);
-            return Results.badRequest(buildBasicResponse(3, "ocurrio un error recuperando password", ex));
-        }
-    }
-
-    public static void MtPasswordForUnit(Client client, String unitChannel)throws Exception{
-        String errorMessage = "";
-        if(client.getLogin() != null){
-            String msisdn = client.getLogin();
-            String userID = client.getUserId();
-            String password = client.getPassword();
-            String push_notification_id = getPushNotificationID(client, unitChannel);
-
-            //Data from configs
-            String unitURL = Config.getString("upstreamURL");
-            String url = unitURL + UPSTREAM_PASSWORD_URL;
-
-            //Hacemos la llamada con los headers de autenticacion
-            WSRequestHolder urlCall = setUpstreamRequest(url, msisdn, password);
-
-            //llenamos el JSON a enviar
-            ObjectNode fields = getBasicUpstreamPOSTRequestJSON(unitChannel, push_notification_id, null, client.getSession());
-            fields.put("msisdn", msisdn); //agregamos el UserID al request
-            upstreamRequestLoggersubscribe(msisdn, fields, "reset");
-
-            //realizamos la llamada al WS
-            F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
-            WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
-            checkUpstreamResponseStatus(wsResponse,client, fields.toString());
-            ObjectNode fResponse = Json.newObject();
-            fResponse = (ObjectNode)wsResponse.asJson();
-            upstreamResponseLoggersubscribe(msisdn, wsResponse, fResponse, "reset");
-            if(fResponse != null){
-                int callResult = fResponse.findValue("result").asInt();
-                errorMessage = getUpstreamError(callResult) + " - unitResult:"+callResult;
-                if(callResult == 0){
-                    //everything is OK, do nothing but wait for MT
-                }else{
-                    //ocurrio un error en la llamada
-                    throw new UpstreamException(callResult, errorMessage, fields.toString());
-                }
-            }else{
-                errorMessage = "Web service call to UnitApp failed";
-                throw new UpstreamException(-1, errorMessage, fields.toString());
-            }
-        }else{
-            errorMessage = "No MSISDN for client";
-            throw new Exception(errorMessage);
-        }
+//        String errorMessage = "";
+//        if(client.getLogin() != null){
+//            String msisdn = client.getLogin();
+//            String userID = null;
+//            String password = null;
+//            String push_notification_id = getPushNotificationID(client, upstreamChannel);
+//
+//            //Data from configs
+//            String upstreamURL = Config.getString("upstreamURL");
+//            String url = upstreamURL + UPSTREAM_PASSWORD_URL;
+//
+//            //Hacemos la llamada con los headers de autenticacion
+//            WSRequestHolder urlCall = setUpstreamRequest(url, msisdn, password);
+//
+//            //llenamos el JSON a enviar
+//            ObjectNode fields = getBasicUpstreamPOSTRequestJSON(upstreamChannel, push_notification_id, null, client.getSession());
+//            fields.put("msisdn", msisdn); //agregamos el UserID al request
+//
+//            upstreamRequestLoggersubscribe(msisdn, fields, "reset", url);
+//
+//            //realizamos la llamada al WS
+//            F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
+//            WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
+//            checkUpstreamResponseStatus(wsResponse,client, fields.toString());
+//            ObjectNode fResponse = Json.newObject();
+//            fResponse = (ObjectNode)wsResponse.asJson();
+//            upstreamResponseLoggersubscribe(msisdn, wsResponse, fResponse, "reset");
+//            if(fResponse != null){
+//                int callResult = fResponse.findValue("result").asInt();
+//                errorMessage = getUpstreamError(callResult) + " - upstreamResult:"+callResult;
+//                if(callResult == 0){
+//                    //everything is OK, do nothing but wait for MT
+//                }else{
+//                    //ocurrio un error en la llamada
+//                    throw new UpstreamException(callResult, errorMessage, fields.toString());
+//                }
+//            }else{
+//                errorMessage = "Web service call to Upstream failed";
+//                throw new UpstreamException(-1, errorMessage, fields.toString());
+//            }
+//        }else{
+//            errorMessage = "No MSISDN for client";
+//            throw new Exception(errorMessage);
+//        }
     }
 
     /**
@@ -790,65 +650,65 @@ public class Upstream extends UpstreamController {
      *
      */
     public static void sendEventForUpstream(Client client, String upstreamChannel, String event_type, ObjectNode metadata) throws Exception{
-        if(client.getLogin() != null && client.getUserId() != null && client.getPassword() != null){
-            String username = client.getLogin();
-            String userID = client.getUserId();
-            String password = client.getPassword();
-            String push_notification_id = getPushNotificationID(client, upstreamChannel);
-
-            //Data from configs
-            String upstreamURL = Config.getString("upstreamURL");
-            String url = upstreamURL + UPSTREAM_EVENT_URL;
-
-            //Hacemos la llamada con los headers de autenticacion
-            WSRequestHolder urlCall = setUpstreamRequest(url, username, password);
-
-            //llenamos el JSON a enviar
-            ObjectNode fields = getBasicUpstreamPOSTRequestJSON(upstreamChannel, push_notification_id, metadata, client.getSession());
-            fields.put("user_id", userID); //agregamos el UserID al request
-            fields.put("event_type", event_type); //agregamos el evento
-            fields.put("timestamp", formatDateUpstream()); //agregamos el time
-
-            //audit log for points
-            upstreamRequestLogger(client, fields, event_type);
-
-            //realizamos la llamada al WS
-            F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
-            WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
-
-            //audit log for responses
-            upstreamResponseLogger(client, wsResponse, event_type);
-            String upstreamGuestUserId = Config.getString("upstreamUserID");
-            if(client.getUserId() != null && client.getUserId().equalsIgnoreCase(upstreamGuestUserId)){
-                return;
-            }
-
-            checkUpstreamResponseStatus(wsResponse, client, fields.toString());
-            ObjectNode fResponse = Json.newObject();
-            fResponse = (ObjectNode)wsResponse.asJson();
-            String errorMessage = "";
-            if(fResponse != null){
-                int callResult = fResponse.findValue("result").asInt();
-                errorMessage = getUpstreamError(callResult) + " - upstreamResult:"+callResult;
-                if(callResult == 0 || callResult == 4){
-                    if(fResponse.has("eligible")) {
-                        //Se trajo la informacion con exito
-                        Boolean eligible = fResponse.findValue("eligible").asBoolean();
-                        //TODO: guardar en el userID la info de si esta activo o no
-                        client.setStatus(eligible ? 1 : 0);
-                    }
-                }else{
-                    //ocurrio un error en la llamada
-                    throw new UpstreamException(callResult, errorMessage, fields.toString());
-                }
-            }else{
-                errorMessage = "Web service call to Upstream failed";
-                throw new UpstreamException(-1, errorMessage, fields.toString());
-            }
-        }else{
-            //deberia estar en periodo de pruebas 2 o desactivado por tiempo -1 la verificacion se hace despues de la llamada
-            client.setStatus(2);
-        }
+//        if(client.getLogin() != null && client.getUserId() != null && client.getPassword() != null){
+//            String username = client.getLogin();
+//            String userID = client.getUserId();
+//            String password = client.getPassword();
+//            String push_notification_id = getPushNotificationID(client, upstreamChannel);
+//
+//            //Data from configs
+//            String upstreamURL = Config.getString("upstreamURL");
+//            String url = upstreamURL + UPSTREAM_EVENT_URL;
+//
+//            //Hacemos la llamada con los headers de autenticacion
+//            WSRequestHolder urlCall = setUpstreamRequest(url, username, password);
+//
+//            //llenamos el JSON a enviar
+//            ObjectNode fields = getBasicUpstreamPOSTRequestJSON(upstreamChannel, push_notification_id, metadata, client.getSession());
+//            fields.put("user_id", userID); //agregamos el UserID al request
+//            fields.put("event_type", event_type); //agregamos el evento
+//            fields.put("timestamp", formatDateUpstream()); //agregamos el time
+//
+//            //audit log for points
+//            upstreamRequestLogger(client, fields, event_type);
+//
+//            //realizamos la llamada al WS
+//            F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
+//            WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
+//
+//            //audit log for responses
+//            upstreamResponseLogger(client, wsResponse, event_type);
+//            String upstreamGuestUserId = Config.getString("upstreamUserID");
+//            if(client.getUserId() != null && client.getUserId().equalsIgnoreCase(upstreamGuestUserId)){
+//                return;
+//            }
+//
+//            checkUpstreamResponseStatus(wsResponse, client, fields.toString());
+//            ObjectNode fResponse = Json.newObject();
+//            fResponse = (ObjectNode)wsResponse.asJson();
+//            String errorMessage = "";
+//            if(fResponse != null){
+//                int callResult = fResponse.findValue("result").asInt();
+//                errorMessage = getUpstreamError(callResult) + " - upstreamResult:"+callResult;
+//                if(callResult == 0 || callResult == 4){
+//                    if(fResponse.has("eligible")) {
+//                        //Se trajo la informacion con exito
+//                        Boolean eligible = fResponse.findValue("eligible").asBoolean();
+//                        //TODO: guardar en el userID la info de si esta activo o no
+//                        client.setStatus(eligible ? 1 : 0);
+//                    }
+//                }else{
+//                    //ocurrio un error en la llamada
+//                    throw new UpstreamException(callResult, errorMessage, fields.toString());
+//                }
+//            }else{
+//                errorMessage = "Web service call to Upstream failed";
+//                throw new UpstreamException(-1, errorMessage, fields.toString());
+//            }
+//        }else{
+//            //deberia estar en periodo de pruebas 2 o desactivado por tiempo -1 la verificacion se hace despues de la llamada
+//            client.setStatus(2);
+//        }
     }
 
     //UPSTREAM COMMONS
@@ -952,7 +812,7 @@ public class Upstream extends UpstreamController {
             }else{
                 if(wsStatus == 401){
                     //la combinacion login:password es incorrecta, borramos el password
-                    //client.setPassword("");
+                    client.setPassword("");
                     throw new UpstreamException(wsStatus, "Upstream service: "+ wsResponse.getUri() +" fails authentication", request);
                 }else{
                     throw new UpstreamException(wsStatus, "Upstream service: "+ wsResponse.getUri() +" fails with unknown status", request);
@@ -1062,9 +922,9 @@ public class Upstream extends UpstreamController {
         }
     }
 
-    private static void upstreamRequestLoggersubscribe(String msisdn, ObjectNode metadata, String eventType) {
+    private static void upstreamRequestLoggersubscribe(String msisdn, ObjectNode metadata, String eventType, String url) {
         try {
-            Logger.of("upstream_subscribe").trace(eventType + " msisdn:" + msisdn + " metadata: "+metadata.toString());
+            Logger.of("upstream_subscribe").trace(eventType + " url: " + url + " msisdn:" + msisdn + " metadata: "+metadata.toString());
         }catch (Exception ex){
             //do nothing catch to avoid interruptions
         }
@@ -1087,10 +947,9 @@ public class Upstream extends UpstreamController {
         System.out.println("fields: " + fields + "\n-----------------------");
     }
 
+    public static void EventKraken(Client client){
 
-    private static void EventKraken(Client client){
-
-        String ws = Config.getString("kraken-play-url").toString() + "/KrakenDaemon/v1/prediction";
+        String ws = Config.getString("kraken-url").toString() + "/KrakenDaemon/v1/prediction";
         ObjectNode event = Json.newObject();
         event.put("source", "9090");
         event.put("destination", client.getLogin());
@@ -1098,6 +957,22 @@ public class Upstream extends UpstreamController {
         event.put("id_carrier", 11);
         event.put("id_country", 8);
         event.put("external_id", client.getIdClient());
+        event.put("msg", "GANA");
+        event.put("origin", "PLUSSPORT");
+        F.Promise<WSResponse> result = WS.url(ws).post(event);
+        String json = result.get(10000).getBody();
+    }
+
+    public static void EventKraken(String msisdn){
+
+        String ws = Config.getString("kraken-url").toString() + "/KrakenDaemon/v1/prediction";
+        ObjectNode event = Json.newObject();
+        event.put("source", "9090");
+        event.put("destination", msisdn);
+        event.put("id_business", 23);
+        event.put("id_carrier", 11);
+        event.put("id_country", 8);
+        event.put("external_id", 0);
         event.put("msg", "GANA");
         event.put("origin", "PLUSSPORT");
         F.Promise<WSResponse> result = WS.url(ws).post(event);
