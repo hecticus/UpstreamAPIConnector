@@ -130,6 +130,8 @@ public class Client extends HecticusModel {
         this.devices = devices;
     }
 
+    public Client(){}
+
 
     public Integer getIdClient() {
         return idClient;
@@ -741,6 +743,7 @@ public class Client extends HecticusModel {
 
             if(clientData.has("password")){
                 password = clientData.get("password").asText().toUpperCase();
+                if( !password.equals(client.getPassword())) return null;
             } else {
                 password = client.getPassword().toUpperCase();
             }
@@ -822,6 +825,7 @@ public class Client extends HecticusModel {
 
             if(clientData.has("password")){
                 password = clientData.get("password").asText();
+                if( !password.equals(client.getPassword())) return null;
             } else {
                 password = client.getPassword();
             }
