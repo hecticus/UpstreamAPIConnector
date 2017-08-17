@@ -1004,5 +1004,10 @@ public class Client extends HecticusModel {
         Upstream.EventKraken(client);
         //Upstream.subscribeUserToUpstream(client, upstreamChannel, operation);
     }
+    
+    public static Client GetByMsisdn(String msisdn)
+    {
+        return finder.where().eq("login", msisdn).findUnique();
+    }
 }
 
