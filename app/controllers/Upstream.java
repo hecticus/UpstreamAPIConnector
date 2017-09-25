@@ -246,7 +246,7 @@ public class Upstream extends UpstreamController {
             //audit log for points
             upstreamRequestLoggersubscribe(msisdn, fields, operation, url);
 
-            printRequest(urlCall, fields);
+            printRequest2(urlCall, fields);
             //realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
             WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
@@ -1001,6 +1001,17 @@ public class Upstream extends UpstreamController {
             System.out.println("\t" + entry.getKey() + " " + entry.getValue());
         }
         System.out.println("fields: " + fields + "\n-----------------------");
+    }
+
+     private static void printRequest2(WSRequestHolder urlCall, ObjectNode fields){
+        String aux ="";
+        aux = "-----------------------\nXPAL headers: ";
+        for (Map.Entry<String, Collection<String>> entry : urlCall.getHeaders().entrySet()) {
+            aux += "\t" + entry.getKey() + " " + entry.getValue();
+        }
+        aux += "fields: " + fields + "\n-----------------------";
+        Logger.of("upstream_subscribe").trace(aux);
+        
     }
 
 }
