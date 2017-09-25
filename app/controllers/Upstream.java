@@ -246,7 +246,7 @@ public class Upstream extends UpstreamController {
             //audit log for points
             upstreamRequestLoggersubscribe(msisdn, fields, operation, url);
 
-
+            printRequest(urlCall, fields);
             //realizamos la llamada al WS
             F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
             WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
