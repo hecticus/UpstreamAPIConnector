@@ -34,7 +34,7 @@ import java.util.*;
  */
 @Entity
 @Inheritance
-@EntityConcurrencyMode(ConcurrencyMode.NONE)
+//@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @DiscriminatorColumn(name="client_type", discriminatorType = DiscriminatorType.STRING)
 @Table(name="clients")
 public class Client extends HecticusModel {
