@@ -2,6 +2,8 @@ package models.clients;
 
 import com.avaje.ebean.Ebean;
 import com.avaje.ebean.SqlUpdate;
+import com.avaje.ebean.annotation.ConcurrencyMode;
+import com.avaje.ebean.annotation.EntityConcurrencyMode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Predicate;
@@ -32,6 +34,7 @@ import java.util.*;
  */
 @Entity
 @Inheritance
+@EntityConcurrencyMode(ConcurrencyMode.NONE)
 @DiscriminatorColumn(name="client_type", discriminatorType = DiscriminatorType.STRING)
 @Table(name="clients")
 public class Client extends HecticusModel {
