@@ -248,9 +248,19 @@ public class Upstream extends UpstreamController {
 
             printRequest2(urlCall, fields);
             //realizamos la llamada al WS
-            F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
-            WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
+            String dates = returnRequest(urlCall, fields);
+            WSResponse wsResponse = null;
+            try {
 
+                F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
+                 wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
+            }catch(Exception e)
+            {
+                //Logger.of("upstream").trace("XPAL:" + dates + " user_id:" + client.getLogin() + " response: "+ wsResponse.getBody());
+            }finally
+            {
+                Logger.of("upstream").trace("XPAL:" + dates + " user_id:" + client.getLogin() + " response: "+ wsResponse.getBody());
+            }
             //audit log for responses
 
 
@@ -438,8 +448,24 @@ public class Upstream extends UpstreamController {
             printRequest(urlCall, fields);
             upstreamRequestLoggersubscribe(username, fields, "get_id", url);
             //realizamos la llamada al WS
-            F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
-            WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
+
+
+
+            String dates = returnRequest(urlCall, fields);
+            WSResponse wsResponse = null;
+
+            try {
+
+                F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
+                wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
+
+            }catch(Exception e)
+            {
+                //Logger.of("upstream").trace("XPAL:" + dates + " user_id:" + client.getLogin() + " response: "+ wsResponse.getBody());
+            }finally
+            {
+                Logger.of("upstream").trace("XPAL:" + dates + " user_id:" + client.getLogin() + " response: "+ wsResponse.getBody());
+            }
 
             String upstreamGuestUserId = Config.getString("upstreamUserID");
             if(client.getUserId() != null && client.getUserId().equalsIgnoreCase(upstreamGuestUserId)){
@@ -530,15 +556,25 @@ public class Upstream extends UpstreamController {
             fields.put("user_id", userID); //agregamos el UserID al request
 
             printRequest(urlCall, fields);
+            String dates = returnRequest(urlCall, fields);
+
             upstreamRequestLoggersubscribe(username, fields, "status", url);
+            WSResponse wsResponse = null;
+            try {
+                //realizamos la llamada al WS
+                F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
+                wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
 
-            //realizamos la llamada al WS
-            F.Promise<play.libs.ws.WSResponse> resultWS = urlCall.post(fields);
-            WSResponse wsResponse = resultWS.get(Config.getLong("ws-timeout-millis"), TimeUnit.MILLISECONDS);
-
-            String upstreamGuestUserId = Config.getString("upstreamUserID");
-            if(client.getUserId() != null && client.getUserId().equalsIgnoreCase(upstreamGuestUserId)){
-                return;
+                String upstreamGuestUserId = Config.getString("upstreamUserID");
+                if (client.getUserId() != null && client.getUserId().equalsIgnoreCase(upstreamGuestUserId)) {
+                    return;
+                }
+            }catch(Exception e)
+            {
+                //Logger.of("upstream").trace("XPAL:" + dates + " user_id:" + client.getLogin() + " response: "+ wsResponse.getBody());
+            }finally
+            {
+                Logger.of("upstream").trace("XPAL:" + dates + " user_id:" + client.getLogin() + " response: "+ wsResponse.getBody());
             }
 
             checkUpstreamResponseStatus(wsResponse,client, fields.toString());
@@ -994,13 +1030,24 @@ public class Upstream extends UpstreamController {
             //do nothing catch to avoid interruptions
         }
     }
-    
+
     private static void printRequest(WSRequestHolder urlCall, ObjectNode fields){
         System.out.println("-----------------------\nheaders: ");
         for (Map.Entry<String, Collection<String>> entry : urlCall.getHeaders().entrySet()) {
             System.out.println("\t" + entry.getKey() + " " + entry.getValue());
         }
         System.out.println("fields: " + fields + "\n-----------------------");
+    }
+
+    private static String returnRequest(WSRequestHolder urlCall, ObjectNode fields){
+        String aux ="";
+        aux = "-----------------------\nXPAL headers: ";
+        for (Map.Entry<String, Collection<String>> entry : urlCall.getHeaders().entrySet()) {
+            aux += "\t" + entry.getKey() + " " + entry.getValue();
+        }
+        aux += "fields: " + fields + "\n-----------------------";
+        //Logger.of("upstream_subscribe").trace(aux);
+        return aux;
     }
 
      private static void printRequest2(WSRequestHolder urlCall, ObjectNode fields){
