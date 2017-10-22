@@ -864,7 +864,9 @@ public class Upstream extends UpstreamController {
                 for (int i = 0; i < devices.size(); i++) {
                     if (devices.get(i).getDevice().getName().equalsIgnoreCase(channel)) {
                         //con el primer push_notification_id nos basta por ahora
-                        push_notification_id = devices.get(i).getRegistrationId();
+                        //push_notification_id = devices.get(i).getRegistrationId();
+                        push_notification_id = (devices.get(i).getRegistrationId().length() > 119?devices.get(i).getRegistrationId().substring(0,119):devices.get(i).getRegistrationId()) ;
+
                         break;
                     }
                 }
