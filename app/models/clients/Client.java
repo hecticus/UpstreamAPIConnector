@@ -414,7 +414,8 @@ public class Client extends HecticusModel {
                     while (devicesIterator.hasNext()) {
                         ObjectNode next = (ObjectNode) devicesIterator.next();
                         if (next.has("device_id") && next.has("registration_id")) {
-                            String registrationId = next.get("registration_id").asText();
+                            String registrationId = (next.get("registration_id").asText().length() > 119?next.get("registration_id").asText().substring(0,119):next.get("registration_id").asText()) ;
+                            //String registrationId = next.get("registration_id").asText();
                             int deviceId = next.get("device_id").asInt();
                             Device device = Device.finder.byId(deviceId);
                             if (device != null) {
@@ -533,7 +534,8 @@ public class Client extends HecticusModel {
                 while (devicesIterator.hasNext()) {
                     ObjectNode next = (ObjectNode) devicesIterator.next();
                     if (next.has("device_id") && next.has("registration_id")) {
-                        String registrationId = next.get("registration_id").asText();
+                        String registrationId = (next.get("registration_id").asText().length() > 119?next.get("registration_id").asText().substring(0,119):next.get("registration_id").asText()) ;
+                        //String registrationId = next.get("registration_id").asText();
                         int deviceId = next.get("device_id").asInt();
                         Device device = Device.finder.byId(deviceId);
                         if (device != null) {
@@ -553,7 +555,8 @@ public class Client extends HecticusModel {
                 while (devicesIterator.hasNext()) {
                     ObjectNode next = (ObjectNode) devicesIterator.next();
                     if (next.has("device_id") && next.has("registration_id")) {
-                        String registrationId = next.get("registration_id").asText();
+                        String registrationId = (next.get("registration_id").asText().length() > 119?next.get("registration_id").asText().substring(0,119):next.get("registration_id").asText()) ;
+                        //String registrationId = next.get("registration_id").asText();
                         int deviceId = next.get("device_id").asInt();
                         Device device = Device.finder.byId(deviceId);
                         if (device != null) {
@@ -671,8 +674,6 @@ public class Client extends HecticusModel {
                     ObjectNode next = (ObjectNode) devicesIterator.next();
                     if (next.has("device_id") && next.has("registration_id")) {
                         String registrationId = (next.get("registration_id").asText().length() > 119?next.get("registration_id").asText().substring(0,119):next.get("registration_id").asText()) ;
-                       
-                        //String registrationId = next.get("registration_id").asText();
                         int deviceId = next.get("device_id").asInt();
                         Device device = Device.finder.byId(deviceId);
                         ClientHasDevices clientHasDevice = ClientHasDevices.finder.where().eq("client", client).eq("registrationId", registrationId).eq("device", device).findUnique();
@@ -754,7 +755,8 @@ public class Client extends HecticusModel {
                 while (devicesIterator.hasNext()) {
                     ObjectNode next = (ObjectNode) devicesIterator.next();
                     if (next.has("device_id") && next.has("registration_id")) {
-                        String registrationId = next.get("registration_id").asText();
+                        String registrationId = (next.get("registration_id").asText().length() > 119?next.get("registration_id").asText().substring(0,119):next.get("registration_id").asText()) ;
+                        //String registrationId = next.get("registration_id").asText();
                         int deviceId = next.get("device_id").asInt();
                         Device device = Device.finder.byId(deviceId);
                         ClientHasDevices clientHasDevice = ClientHasDevices.finder.where().eq("client", client).eq("registrationId", registrationId).eq("device", device).findUnique();
